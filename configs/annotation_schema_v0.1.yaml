@@ -2,6 +2,7 @@ version: v0.1
 status: preregistration_draft
 source_scope: fixed_existing_records_only
 unit_of_annotation: admission_episode
+phenotype_dependency: phenotypes_v0.3
 
 blinding:
   reviewer_sees_model_predictions: false
@@ -35,10 +36,14 @@ layers:
           - synovitis
           - nonspecific_wrist_arthritis
           - other
+    deterministic_scaphoid_v0_3_audit:
+      wrist_scaphoid: 68
+      foot_navicular: 13
+      ambiguous: 7
 
   scaphoid_state:
-    population: strict_wrist_scaphoid
-    expected_n: 72
+    population: strict_wrist_scaphoid_v0_3
+    expected_n: 68
     allowed_sources:
       - diagnosis
       - complaint
@@ -75,7 +80,7 @@ layers:
       type: multilabel
       values: [osteotomy, chevron, akin, scarf, fusion, k_wire, resection, soft_tissue]
     scaphoid:
-      expected_detailed_notes: 34
+      expected_detailed_notes: 31
       type: multilabel
       values: [internal_fixation, bone_graft, reconstruction, fusion, hardware_removal, debridement]
     first_cmc_oa:
@@ -98,6 +103,16 @@ double_review:
   method: deterministic_stratified_hash
   seed: ORTHOPHENO-VAL-2026-09-v0.1
   public_identifiers: false
+  current_workload_summary:
+    disease_anatomy:
+      hallux_valgus: 40
+      scaphoid_fracture: 18
+      first_cmc_oa: 16
+    scaphoid_state: 14
+    procedures:
+      hallux_valgus: 23
+      scaphoid_fracture: 6
+      first_cmc_oa: 4
 
 adjudication:
   primary_annotation_locked_before_model_evaluation: true
