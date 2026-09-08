@@ -1,0 +1,4 @@
+domain,candidate_admissions,deterministic_strict_phenotype,diagnosis_rows_per_admission,female_percent,age_median_iqr,bmi_median,complaint_available_n,physical_exam_available_n,detailed_note_module_n,disease_concordant_procedure_note_n,exam_record_available_n,cbc_available_n,coagulation_available_n
+Hallux valgus,200,193,10.85,82.4,"54.0 [40.0, 62.0]",23.5,150,121,114,113,161,161,162
+Scaphoid retrieval,88,68,13.40,8.8,"34.0 [26.8, 45.2]",25.1,55,32,31,28,43,40,39
+First-CMC OA,79,28,12.40,75.0,"54.0 [46.8, 60.2]",24.0,22,18,18,18,24,24,24
