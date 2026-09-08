@@ -1,0 +1,4 @@
+anatomy_class,n,candidate_denominator,percent,analysis_role
+wrist_scaphoid,68,88,77.3%,included_in_strict_wrist_scaphoid_analysis
+foot_navicular,13,88,14.8%,excluded_from_wrist_scaphoid_analysis
+ambiguous,7,88,8.0%,reserved_for_physician_adjudication
