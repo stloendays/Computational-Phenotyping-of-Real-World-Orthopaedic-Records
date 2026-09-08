@@ -1,15 +1,15 @@
 variable,case_group,comparison_group,effect_measure,effect_estimate,ci95,p_value,analysis_population
-age_years,"34.0 [27.5, 50.0]","33.0 [26.0, 39.0]",Mann-Whitney U,,,0.159,all strict wrist-scaphoid records with nonmissing variable
-bmi_kg_m2,"24.5 [23.1, 26.3]","25.4 [22.7, 28.1]",Mann-Whitney U,,,0.723,all strict wrist-scaphoid records with nonmissing variable
-female,<5,5 (10.2%),odds ratio,suppressed,suppressed,suppressed,all; n=23 vs 49
-complaint_available,18 (78.3%),41 (83.7%),odds ratio,0.70,0.20-2.45,0.743,all; n=23 vs 49
-physical_exam_available,18 (78.3%),17 (34.7%),odds ratio,6.78,2.14-21.45,0.001,all; n=23 vs 49
-any_surgery_record,23 (100.0%),23 (46.9%),odds ratio,53.00,3.05-921.50,0.000,all; n=23 vs 49
-detailed_operating_note,18 (78.3%),16 (32.7%),odds ratio,7.42,2.34-23.61,0.000,all; n=23 vs 49
-imaging_exam_record,23 (100.0%),23 (46.9%),odds ratio,53.00,3.05-921.50,0.000,all; n=23 vs 49
-cbc_record,22 (95.7%),21 (42.9%),odds ratio,suppressed,suppressed,suppressed,all; n=23 vs 49
-procedure_internal_fixation,16 (88.9%),15 (93.8%),odds ratio,suppressed,suppressed,suppressed,detailed_note; n=18 vs 16
-procedure_bone_graft,9 (50.0%),<5,odds ratio,suppressed,suppressed,suppressed,detailed_note; n=18 vs 16
-procedure_reconstruction,0 (0.0%),<5,odds ratio,suppressed,suppressed,suppressed,detailed_note; n=18 vs 16
-procedure_fusion,<5,0 (0.0%),odds ratio,suppressed,suppressed,suppressed,detailed_note; n=18 vs 16
-procedure_complex_reconstruction_marker,10 (55.6%),<5,odds ratio,suppressed,suppressed,suppressed,detailed_note; n=18 vs 16
+age_years,"34.0 [27.5, 50.0]","33.0 [27.0, 40.0]",Mann-Whitney U,,,0.201,all strict wrist-scaphoid records with nonmissing variable
+bmi_kg_m2,"24.5 [23.1, 26.3]","25.7 [22.0, 28.7]",Mann-Whitney U,,,0.728,all strict wrist-scaphoid records with nonmissing variable
+female,<5,<5,odds ratio,suppressed,suppressed,suppressed,all; n=23 vs 45
+complaint_available,18 (78.3%),37 (82.2%),odds ratio,0.78,0.22-2.72,0.750,all; n=23 vs 45
+physical_exam_available,18 (78.3%),14 (31.1%),odds ratio,7.97,2.46-25.81,0.000,all; n=23 vs 45
+any_surgery_record,23 (100.0%),20 (44.4%),odds ratio,58.46,3.35-1021.77,0.000,all; n=23 vs 45
+detailed_operating_note,18 (78.3%),13 (28.9%),odds ratio,8.86,2.72-28.90,0.000,all; n=23 vs 45
+imaging_exam_record,23 (100.0%),20 (44.4%),odds ratio,58.46,3.35-1021.77,0.000,all; n=23 vs 45
+cbc_record,22 (95.7%),18 (40.0%),odds ratio,suppressed,suppressed,suppressed,all; n=23 vs 45
+procedure_internal_fixation,16 (88.9%),12 (92.3%),odds ratio,suppressed,suppressed,suppressed,detailed_note; n=18 vs 13
+procedure_bone_graft,9 (50.0%),<5,odds ratio,suppressed,suppressed,suppressed,detailed_note; n=18 vs 13
+procedure_reconstruction,0 (0.0%),<5,odds ratio,suppressed,suppressed,suppressed,detailed_note; n=18 vs 13
+procedure_fusion,<5,0 (0.0%),odds ratio,suppressed,suppressed,suppressed,detailed_note; n=18 vs 13
+procedure_complex_reconstruction_marker,10 (55.6%),<5,odds ratio,suppressed,suppressed,suppressed,detailed_note; n=18 vs 13
