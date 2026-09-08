@@ -1,0 +1,46 @@
+{
+  "freeze_version": "v0.1",
+  "status": "deterministic_predictions_frozen_before_gold_annotation",
+  "created_at_utc": "2026-09-08T12:56:47Z",
+  "fixed_dataset": true,
+  "reference_standard_status_at_prediction_generation": "unannotated",
+  "pre_gold_check": {
+    "disease_anatomy_rows": 367,
+    "scaphoid_state_rows": 68,
+    "procedure_rows": 163,
+    "nonblank_gold_cells_across_all_annotation_packets": 0
+  },
+  "prediction_files_private": {
+    "rule_disease_anatomy_predictions.csv": {
+      "row_count": 367,
+      "sha256": "56d51f1795bb31ee7050acf0c38abdc29c5e234779e2f6f2dd2bf41e587823e6"
+    },
+    "rule_scaphoid_state_predictions.csv": {
+      "row_count": 68,
+      "sha256": "620d7ab77cf3d92fd11a67e4936eacf12a0f2008f76833dac0662656c0a05f5b"
+    },
+    "rule_procedure_predictions.csv": {
+      "row_count": 163,
+      "sha256": "0ef84299300eb1d47f74a5843b105d025f645915bacc4b0b6fde65944e0cfb05"
+    }
+  },
+  "code_sha256": {
+    "rules.py": "03219cf27674459061d66effd114b6c72318ade50ec19d05107227ca11cf4e33",
+    "procedure_rules.py": "3c3d329b44a3ce2e1aa003d644dabc9df3747ba2dcad7942c1d5ecf0f500fcd9",
+    "hallux_baseline_rules.py": "e5f8c8ada49ddfb65425456eaafc6c5efeb8be5006001c2c0adff1469d863f30",
+    "generate_rule_predictions.py": "f740060e8d242f8b29a18ca175031e430cd8a23fa77f95943807de12c4a68461"
+  },
+  "public_code_commits": {
+    "phenotype_v0_3_rules": "1fc4d1966d0eb85e64a0156550a91d6ac7c130b6",
+    "procedure_rules": "f2d551329eb38bc33ef9727eb61c70f9e2f3b17f",
+    "hallux_baseline_rules": "7c9858c454c2184cde59704d95ed8f9f1cfe6aad",
+    "blind_prediction_generator": "e6c1efb5dd59277c949cfa51fdd179d48e70fef7"
+  },
+  "privacy": {
+    "prediction_rows_public": false,
+    "study_ids_public": false,
+    "clinical_text_public": false,
+    "manifest_contains_aggregate_metadata_and_hashes_only": true
+  },
+  "interpretation": "These hashes preregister the deterministic baseline outputs before any physician gold labels were entered. Later baseline scoring must use these frozen private prediction files, or a byte-identical regeneration from the recorded code, rather than predictions modified after gold-standard review."
+}
