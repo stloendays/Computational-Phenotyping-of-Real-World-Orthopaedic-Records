@@ -139,6 +139,11 @@ def build(root: Path, out_root: Path):
                 'physical_exam_text': join_parts(r['exam']),
                 'gold_disease_anatomy_label': '',
                 'gold_competing_diagnosis_labels': '',
+                'gold_hallux_laterality': '',
+                'gold_hallux_bilateral_disease_mention': '',
+                'gold_hallux_deformity_angle_deg': '',
+                'gold_hallux_pain': '',
+                'gold_hallux_functional_limitation': '',
                 'reviewer_confidence': '',
                 'reviewer_comment': '',
             })
@@ -177,7 +182,11 @@ def build(root: Path, out_root: Path):
             double_review_candidates.append((second_review_score(domain + '_procedure', key), 'procedure', domain, sid))
 
     write_csv(private_dir/'disease_anatomy_annotation.csv', disease_rows,
-              ['study_id','domain','diagnosis_text','complaint_text','physical_exam_text','gold_disease_anatomy_label','gold_competing_diagnosis_labels','reviewer_confidence','reviewer_comment'])
+              ['study_id','domain','diagnosis_text','complaint_text','physical_exam_text',
+               'gold_disease_anatomy_label','gold_competing_diagnosis_labels',
+               'gold_hallux_laterality','gold_hallux_bilateral_disease_mention',
+               'gold_hallux_deformity_angle_deg','gold_hallux_pain','gold_hallux_functional_limitation',
+               'reviewer_confidence','reviewer_comment'])
     write_csv(private_dir/'scaphoid_state_annotation.csv', scaphoid_state_rows,
               ['study_id','diagnosis_text','complaint_text','physical_exam_text','gold_scaphoid_state','evidence_source','reviewer_confidence','reviewer_comment'])
     write_csv(private_dir/'procedure_annotation.csv', procedure_rows,
