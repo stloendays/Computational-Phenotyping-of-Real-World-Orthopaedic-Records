@@ -1,0 +1,10 @@
+disease,era,strict_admissions,complaint_exam_n,complaint_exam_percent,detailed_operating_note_n,detailed_operating_note_percent,surgery_name_only_n,surgery_name_only_percent,imaging_exam_n,imaging_exam_percent,laboratory_n,laboratory_percent
+hallux_valgus,2015-2018,45,<5,<5,0,0.0%,37,82.2%,41,91.1%,42,93.3%
+hallux_valgus,2019-2022,23,23,100.0%,0,0.0%,0,0.0%,0,0.0%,0,0.0%
+hallux_valgus,2023-2025,125,124,99.2%,114,91.2%,0,0.0%,120,96.0%,121,96.8%
+first_cmc_oa,2015-2018,6,0,0.0%,0,0.0%,6,100.0%,6,100.0%,6,100.0%
+first_cmc_oa,2019-2022,<5,<5,,<5,,<5,,<5,,<5,
+first_cmc_oa,2023-2025,18,18,100.0%,18,100.0%,0,0.0%,18,100.0%,18,100.0%
+scaphoid_fracture,2015-2018,15,<5,<5,0,0.0%,12,80.0%,12,80.0%,12,80.0%
+scaphoid_fracture,2019-2022,22,22,100.0%,0,0.0%,0,0.0%,0,0.0%,0,0.0%
+scaphoid_fracture,2023-2025,35,35,100.0%,34,97.1%,0,0.0%,34,97.1%,31,88.6%
