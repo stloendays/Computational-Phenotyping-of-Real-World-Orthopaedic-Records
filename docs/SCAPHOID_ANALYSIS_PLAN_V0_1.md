@@ -1,108 +1,135 @@
-# Focused Scaphoid Analysis Plan v0.1
+# Focused Scaphoid Analysis Plan v0.2
 
 ## Study question
 
-Among high-specificity wrist-scaphoid admissions with disease-concordant detailed operative documentation, is an established chronic/nonunion phenotype associated with **bone-graft augmentation**, while internal fixation remains common in both phenotype groups?
+Among physician-confirmed wrist-scaphoid admissions with disease-concordant detailed operative documentation, is an established chronic/nonunion presentation associated with **bone-graft augmentation**, while internal fixation remains common across phenotype groups?
 
 ## Study design
 
 Retrospective, fixed-data, exploratory comparative study.
 
-The study is explicitly **problem-first**. Computational text processing is used only to measure exposure and operative components from the existing records.
+The study is problem-first. Computational text processing is a measurement aid, not the scientific objective.
 
-## Cohort construction
+## Candidate retrieval
 
-### Candidate retrieval
+The supplied broad scaphoid search retrieved **88 admission episodes**.
 
-88 admissions were retrieved under the supplied broad scaphoid search.
+The current deterministic v0.3 audit partitions these into 68 wrist scaphoid, 13 foot navicular and 7 ambiguous records. These counts are useful for pre-validation auditing but **do not define the final clinical cohort**.
 
-### Anatomy restriction
+## Two-stage physician cohort definition
 
-Phenotype v0.3 partitions these candidates into:
+### Stage 1 — anatomy reference standard
 
-- 68 high-specificity wrist-scaphoid admissions;
-- 13 explicit foot-navicular admissions;
-- 7 anatomically ambiguous admissions.
+All 88 candidates undergo blinded physician anatomy review:
 
-Only the 68 high-specificity wrist-scaphoid admissions enter the current pre-validation clinical study.
+- `wrist_scaphoid`;
+- `foot_navicular`;
+- `other`;
+- `uncertain`.
 
-## Exposure
+The final wrist-scaphoid cohort is defined by physician anatomy Gold, not by deterministic-rule positivity.
 
-### Established chronic/nonunion
+This two-stage design prevents verification bias that would arise if downstream state/procedure review were restricted to the rule-positive 68 records.
 
-Defined from diagnosis, complaint and physical-examination text only.
+### Stage 2 — generated after Stage-1 anatomy freeze
 
-Operative text is excluded from exposure assignment.
+After Stage 1 is adjudicated and frozen, `make_scaph_physician_packet_v0_1.py downstream` generates state and procedure review files for physician-confirmed wrist-scaphoid records.
 
-Current deterministic counts:
+Therefore, the final Stage-2 sample sizes are **not fixed in advance** to the current deterministic 68 wrist records or 31 detailed-note records.
 
-- established chronic/nonunion: 23;
-- comparison phenotype: 45.
+## Clinical-state exposure
 
-The comparison phenotype is **not** uniformly labelled acute because the fixed record does not prove acute status for every episode.
+For physician-confirmed wrist-scaphoid records, state is determined from:
 
-### Comparison-state audit
+- diagnosis;
+- complaint;
+- physical examination.
 
-A conservative deterministic audit of the 13 disease-concordant operative records in the comparison group found explicit acute/new or recent-injury wording in 7/13. The remaining records include postoperative-history wording, month/year duration wording without a chronic keyword, or insufficient explicit state evidence.
+Operative text is excluded from state assignment.
 
-This audit does not reclassify records. It establishes that the main comparison group must retain the neutral label `comparison phenotype` until physician adjudication.
+State categories:
 
-The aggregate audit is versioned in `data/aggregate/scaphoid_comparison_state_audit_v0_1.csv`.
+1. `acute_or_new_fracture`;
+2. `established_chronic_fracture`;
+3. `established_nonunion`;
+4. `chronic_nonunion_not_distinguishable`;
+5. `insufficient_or_uncertain`.
+
+For the primary clinical analysis, categories 2-4 form the `established chronic/nonunion` group. Physician-confirmed wrist-scaphoid records that are not established chronic/nonunion and are sufficiently classifiable form the main comparison group. Uncertain state is excluded from the relevant inferential comparison.
+
+### Deterministic pre-validation observation
+
+Under the current deterministic rules, 23/68 wrist-scaphoid records are classified established chronic/nonunion and 45/68 comparison. These are provisional audit counts only.
+
+## Comparison-state audit and acute-only sensitivity
+
+In the current deterministic operative comparison group, conservative source-text auditing finds explicit acute/new or recent-injury wording in only **7/13** records. The remaining records contain postoperative-history wording, longer-duration wording without an explicit chronic keyword, or insufficient explicit state evidence.
+
+Therefore:
+
+- the main comparison group is not labelled uniformly acute;
+- a prespecified sensitivity analysis restricts controls to **physician-confirmed `acute_or_new_fracture`** records only.
+
+See `data/aggregate/scaphoid_comparison_state_audit_v0_1.csv`.
 
 ## Operative analytic population
 
-Detailed operative-note availability and target-disease relevance are separated.
+Within physician-confirmed wrist-scaphoid records that have a detailed operative-note module, physicians first determine:
 
-Current disease-concordant detailed operative sample:
+`target_disease_procedure_present = yes / no / uncertain`.
 
-- chronic/nonunion: 15;
-- comparison: 13;
-- total: 28.
+Only disease-concordant wrist-scaphoid operative records enter the treatment-composition analysis.
 
-**All 28 records occur in 2023-2025.** Consequently, 2023-2025 is the operative study period itself. It is not treated as an independent sensitivity cohort.
+### Deterministic pre-validation observation
 
-Earlier years remain useful for cohort/state description but cannot independently replicate detailed procedure composition under the supplied exports.
+The current rule-based audit identifies:
+
+- 31 detailed-note module records among deterministic wrist-scaphoid cases;
+- 28 disease-concordant detailed operative records;
+- 15 established chronic/nonunion and 13 comparison operative records.
+
+All 28 current disease-concordant records occur in **2023-2025**. These are provisional denominators; final manuscript denominators will be regenerated from physician anatomy/state/procedure Gold.
+
+The 2023-2025 period is the operative study period represented by the supplied detailed records, not an independent temporal validation subset.
 
 ## Primary outcome
 
 ### Bone-graft augmentation
 
-Binary target-disease procedure component:
+Binary physician-adjudicated target-disease procedure component:
 
-- yes: bone graft/harvest explicitly documented in the disease-concordant operative record;
-- no: no such component documented after physician validation.
+- yes: bone graft/harvest explicitly used as part of the wrist-scaphoid operation;
+- no: no graft component after review.
 
-This outcome was selected because it represents a specific biologic augmentation step and does not require constructing a post-hoc severity score.
+Bone graft was selected before physician-reference scoring because it is a specific biologic augmentation step and avoids defining the primary result through a post-hoc composite.
 
 ## Key contrast outcome
 
 ### Internal fixation
 
-The primary scientific pattern is expected to be a dissociation:
+The scientific pattern being tested is a dissociation:
 
-- internal fixation remains common across phenotype groups;
-- bone-graft augmentation increases in established chronic/nonunion presentations.
-
-This contrast is more informative than simply stating that chronic/nonunion surgery is 'more complex'.
+- fixation remains common across phenotype groups;
+- graft augmentation increases in established chronic/nonunion presentations.
 
 ## Secondary outcomes
 
-1. any augmentation composite: bone graft, reconstruction or fusion;
+1. graft/reconstruction/fusion augmentation composite;
 2. number of major procedure components among fixation, graft, reconstruction and fusion;
-3. individual fusion/reconstruction components, reported descriptively when sparse.
+3. individual reconstruction/fusion components, reported descriptively when sparse.
 
-The composite and component-count analyses remain secondary even if their P values are smaller than the primary analysis.
+These remain secondary regardless of their P values.
 
 ## Baseline descriptors
 
-Report by operative phenotype group:
+Report by physician-adjudicated operative phenotype group:
 
 - age;
 - sex;
 - BMI;
-- relevant documented disease-severity descriptors where physician validation supports them.
+- other clearly documented preoperative descriptors if sufficiently complete and clinically interpretable.
 
-Current deterministic operative subset shows similar age and BMI distributions between groups; these are descriptive observations pending reference-standard validation.
+Missing denominators are reported explicitly.
 
 ## Statistical analysis
 
@@ -112,16 +139,14 @@ Bone-graft augmentation:
 
 - 2×2 table;
 - Fisher exact test;
-- crude odds ratio and 95% confidence interval in the internal/manuscript analysis.
-
-The primary comparison is `established chronic/nonunion` versus the full physician-adjudicated non-established comparison group, because this preserves the fixed-data cohort without post-hoc exclusion.
+- crude odds ratio and 95% confidence interval.
 
 ### Key contrast
 
 Internal fixation:
 
 - Fisher exact test;
-- odds ratio and 95% confidence interval.
+- crude odds ratio and 95% confidence interval.
 
 ### Secondary treatment-intensity analysis
 
@@ -132,56 +157,56 @@ Major procedure-component count:
 
 ### Adjustment
 
-No routine multivariable model is prespecified for the 28-record operative sample. A sparse-data regression is only considered if physician adjudication changes the evaluable sample sufficiently and the covariate count remains clinically defensible.
+No routine multivariable model is prespecified for the current small operative sample. Sparse-data regression is considered only if the physician-defined final sample supports a clinically defensible covariate set.
 
-No model selection by P value is allowed.
+No stepwise selection, random forest, XGBoost or neural-network model is used to answer the primary question.
 
-## Missing data
+## Missingness and uncertainty
 
 - missing detailed operative note ≠ no surgery;
-- detailed operative note for another anatomical problem ≠ target-disease surgery;
-- undocumented procedure component ≠ validated absence until physician review;
-- absence of an acute keyword ≠ chronic disease;
-- BMI is reported with its actual denominator.
+- unrelated detailed operative note ≠ target-disease surgery;
+- absence of a chronic keyword ≠ acute disease;
+- undocumented procedure component is not treated as clinically validated absence until physician review;
+- anatomy/state/relevance uncertainty is retained explicitly rather than force-classified.
 
-## Physician validation gate
+## Physician validation and double review
 
-Final clinical estimates require physician adjudication of:
+### Stage 1
 
-1. wrist-scaphoid anatomy;
-2. clinical state using the prespecified categories `acute/new`, `established chronic`, `established nonunion`, `chronic/nonunion not distinguishable`, or `insufficient/uncertain`;
-3. operative-note target-disease relevance;
-4. internal fixation;
-5. bone graft;
-6. reconstruction/fusion when relevant.
+- all 88 anatomy candidates undergo primary review;
+- approximately 20% undergo independent second review;
+- disagreements are adjudicated before Stage-1 freeze.
 
-The frozen deterministic baseline is evaluated against this reference standard but cannot define the reference standard.
+### Stage 2
 
-## Sensitivity analyses
+Generated only from physician-confirmed wrist scaphoid:
 
-Given the fixed export structure, there is no independent earlier-era detailed-note replication.
+- every physician-confirmed wrist record receives state review;
+- every physician-confirmed wrist record with a detailed operative module receives procedure relevance/component review;
+- approximately 20% of each Stage-2 layer undergoes independent second review.
 
-Prespecified robustness checks are therefore:
+Reviewer 2 remains blinded to reviewer 1 and to all rule/model outputs.
 
-1. physician-adjudicated labels versus deterministic labels;
-2. exclusion of uncertain exposure or procedure relevance;
-3. **acute-only sensitivity analysis:** compare established chronic/nonunion records only with physician-confirmed `acute/new fracture` operative records; postoperative-history, long-duration-but-indeterminate and insufficient-state comparison records are excluded from this sensitivity analysis;
-4. primary bone-graft outcome versus broader augmentation composite;
-5. leave-one-out influence check for the primary 2×2 association;
-6. descriptive analysis after excluding records with competing same-admission orthopaedic procedures.
+## Sensitivity and robustness analyses
 
-The acute-only analysis is prespecified because the deterministic comparison-state audit showed that only 7/13 current comparison operative records carry explicit acute/recent-injury wording. It is not introduced in response to the final physician-labelled effect estimate.
+1. primary physician-defined chronic/nonunion vs full classifiable comparison group;
+2. **physician-confirmed acute-only sensitivity analysis**;
+3. exclusion of uncertain procedure relevance;
+4. primary bone-graft outcome vs broader augmentation composite;
+5. leave-one-out influence analysis for the primary 2×2 association;
+6. exclusion of records with competing same-admission orthopaedic procedures;
+7. deterministic pre-validation estimate vs physician-adjudicated estimate, reported as measurement robustness rather than model superiority.
 
-These checks evaluate state-definition, label and influence robustness rather than claiming an independent temporal validation cohort.
+Because the supplied detailed operative records are concentrated in 2023-2025, historical detailed-procedure replication is not available.
 
 ## Claim boundary
 
-The strongest allowed claim is an association between established chronic/nonunion phenotype and the **composition of documented surgery**.
+The strongest allowed claim is an association between established chronic/nonunion presentation and **documented operative composition**.
 
 The study cannot establish:
 
 - future nonunion risk;
+- postoperative union or healing time;
 - treatment efficacy;
-- postoperative union;
 - causal treatment selection;
-- superiority of a graft strategy.
+- superiority of a graft technique.
