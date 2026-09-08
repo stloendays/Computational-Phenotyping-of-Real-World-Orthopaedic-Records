@@ -1,0 +1,10 @@
+term_category,strict_first_cmc_n,non_strict_candidate_n,non_strict_candidate_denominator
+radiocarpal_arthritis,0,<5,51
+ulnocarpal_arthritis,0,0,51
+rheumatoid_wrist,0,7,51
+gouty_wrist,<5,7,51
+traumatic_wrist,0,<5,51
+synovitis,<5,26,51
+generic_wrist_arthritis,0,13,51
+generic_carpometacarpal,12,0,51
+strict_first_cmc_phenotype,28,,51
