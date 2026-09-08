@@ -1,0 +1,3 @@
+deterministic_group,operative_records,records_with_explicit_duration,duration_median_days,duration_q1_days,duration_q3_days,status
+bone_graft_present,8,7,182.6,167.4,1004.4,pre-validation exploratory; duration semantics require physician adjudication
+bone_graft_absent,7,6,15.0,2.3,41.0,pre-validation exploratory; duration semantics require physician adjudication
