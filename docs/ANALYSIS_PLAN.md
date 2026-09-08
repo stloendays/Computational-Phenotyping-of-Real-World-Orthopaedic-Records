@@ -12,7 +12,8 @@ Before any confirmatory analysis, generate an audit table for each disease domai
 - unique admission count;
 - strict phenotype count;
 - anatomically ambiguous count;
-- operative-note availability;
+- operative-note module availability;
+- target-disease procedure-note availability;
 - imaging-report availability;
 - laboratory availability;
 - calendar-period distribution.
@@ -61,7 +62,7 @@ The fixed dataset is sufficiently modest to support broad physician adjudication
 
 - all 367 disease/anatomy candidate episodes;
 - all 68 deterministic strict wrist-scaphoid episodes for clinical state;
-- all 163 detailed operative notes in the current strict cohorts for multi-label procedure phenotypes.
+- all 163 strict-cohort admissions with a detailed operative-note module for procedure relevance and multi-label procedure phenotypes.
 
 An approximately 20% deterministic stratified subset is independently reviewed by a second clinician. The reference standard is frozen before method comparison, and the same labels are used for every extraction system.
 
@@ -72,7 +73,7 @@ An approximately 20% deterministic stratified subset is independently reviewed b
 3. LLM-assisted structured extraction;
 4. hybrid extraction.
 
-### Metrics
+### Disease/anatomy and state metrics
 
 For binary/categorical phenotypes:
 
@@ -83,13 +84,29 @@ For binary/categorical phenotypes:
 - exact agreement;
 - confusion matrix.
 
-For multi-label procedure extraction:
+### Procedure attribution and procedure-label metrics
+
+Procedure evaluation is explicitly hierarchical.
+
+**Stage 1 - relevance/attribution**
+
+Each module-available operative admission receives:
+
+`target_disease_procedure_present = yes / no / uncertain`
+
+This stage is evaluated as a clinical extraction task rather than hidden preprocessing. Unrelated operations remain in the evaluation set as hard negatives.
+
+**Stage 2 - multi-label procedure extraction**
+
+Procedure-component labels are clinically interpreted only for physician-adjudicated target-disease procedure records. Report:
 
 - per-label precision, recall and F1;
 - macro-F1;
 - micro-F1;
 - exact-set match;
 - label-cardinality error.
+
+A secondary end-to-end evaluation may score the joint task in which an algorithm must first identify target-disease relevance and then recover the correct procedure set.
 
 Inter-rater reliability is reported on the independently double-reviewed subset. Confidence intervals should be estimated by admission-level bootstrap when sample size permits.
 
@@ -100,6 +117,7 @@ Errors are categorized as:
 - anatomical confusion;
 - negation failure;
 - temporal/state confusion;
+- procedure-attribution error;
 - procedure-component omission;
 - overcalling from broad terminology;
 - abbreviation/variant failure;
@@ -119,6 +137,15 @@ Within the v0.3 high-specificity wrist-scaphoid cohort:
 The comparison group is not uniformly described as acute because the fixed records do not establish acute status for every non-chronic episode.
 
 Established chronic/nonunion status is assigned only from non-operative clinical sources: diagnosis, complaint and physical-examination text. Operative names and operative-note contents are explicitly excluded from case assignment because treatment variables are downstream comparison outcomes. This prevents circular case definition and leakage.
+
+### Procedure denominator rule
+
+A detailed operative-note module is a data-availability variable, not proof that the documented operation treated the wrist scaphoid. The current audit gives:
+
+- module-available detailed operative admissions: 18/23 versus 13/45;
+- disease-concordant procedure admissions: 15/23 versus 13/45.
+
+Only disease-concordant operative admissions contribute to target-disease procedure prevalence and treatment-complexity comparisons. Module availability remains separately reported to characterize documentation architecture.
 
 ### Primary clinical comparison
 
@@ -157,9 +184,14 @@ The primary claim concerns association between established phenotype group and t
 
 ## 6. Aim 4: Hallux valgus procedure phenotyping
 
+### Procedure denominator rule
+
+Among 193 strict hallux-valgus admissions, 114 have a detailed operative-note module and 113 currently satisfy deterministic target-disease procedure concordance. The latter is the pre-validation denominator for clinical treatment-pattern summaries. All 114 remain in the physician/algorithm validation set so procedure attribution can be measured.
+
 ### Primary outputs
 
-- prevalence of operative components;
+- target-disease procedure relevance accuracy;
+- prevalence of operative components among disease-concordant notes;
 - co-occurrence matrix of procedure labels;
 - common procedure combinations;
 - association of available baseline phenotype variables with broad procedure classes.
@@ -179,9 +211,10 @@ Primary outputs:
 - broad-keyword retrieval count;
 - strict first-CMC phenotype count;
 - competing-diagnosis categories from broad retrieval;
-- NLP precision/recall under strict anatomy requirements.
+- NLP precision/recall under strict anatomy requirements;
+- procedure-attribution specificity in a small degenerative-hand domain.
 
-The small strict cohort is not used to train a high-capacity predictive model.
+The current deterministic audit identifies 18 detailed-note module admissions and 18 disease-concordant procedure admissions. The small strict cohort is not used to train a high-capacity predictive model.
 
 ## 8. Calendar-period sensitivity
 
@@ -198,8 +231,9 @@ In the supplied exports, 2019-2022 retains complaint/examination records but lac
 ## 9. Missing-data and uncertainty strategy
 
 - report availability for every key variable;
+- distinguish missing module, available module with unrelated procedure, and target-disease procedure documentation;
 - do not code undocumented free-text phenotypes as negative;
-- preserve an explicit `uncertain` state where anatomy or clinical state cannot be supported;
+- preserve an explicit `uncertain` state where anatomy, clinical state or procedure relevance cannot be supported;
 - avoid multiple imputation for sparse text-derived variables unless assumptions are defensible;
 - complete-case regression is allowed only with explicit denominator reporting and sensitivity analysis.
 
@@ -246,4 +280,4 @@ Every result table or figure should be generated from:
 - an aggregate output file;
 - a recorded random seed when stochastic procedures are used.
 
-No manual Excel-derived manuscript numbers should remain untraceable to code. Rule changes are documented in `docs/PHENOTYPE_CHANGELOG.md` before regenerated results are treated as current.
+No manual Excel-derived manuscript numbers should remain untraceable to code. Rule changes are documented in `docs/PHENOTYPE_CHANGELOG.md` or the corresponding procedure-context audit before regenerated results are treated as current.
