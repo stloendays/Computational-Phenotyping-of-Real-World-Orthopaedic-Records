@@ -75,16 +75,25 @@ layers:
       functional_limitation: [present, absent, undocumented, uncertain]
 
   procedures:
+    annotation_population: all_strict_phenotype_admissions_with_detailed_note_module
+    relevance_label:
+      target_disease_procedure_present: [yes, no, uncertain]
+    relevance_rule:
+      procedure_component_labels_are_clinically_counted_only_when_target_disease_procedure_present_is_yes: true
+      no_and_uncertain_notes_remain_in_algorithm_evaluation_as_hard_negatives: true
     hallux_valgus:
       expected_detailed_notes: 114
+      current_deterministic_disease_concordant_admissions: 113
       type: multilabel
       values: [osteotomy, chevron, akin, scarf, fusion, k_wire, resection, soft_tissue]
     scaphoid:
       expected_detailed_notes: 31
+      current_deterministic_disease_concordant_admissions: 28
       type: multilabel
       values: [internal_fixation, bone_graft, reconstruction, fusion, hardware_removal, debridement]
     first_cmc_oa:
       expected_detailed_notes: 18
+      current_deterministic_disease_concordant_admissions: 18
       type: multilabel
       values: [trapeziectomy, tendon_procedure, ligament_procedure, arthroplasty, fusion]
 
