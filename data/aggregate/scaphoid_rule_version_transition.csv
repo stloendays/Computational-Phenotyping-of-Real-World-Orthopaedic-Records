@@ -1,0 +1,6 @@
+previous_rule_label,v0_3_anatomy_class,n,interpretation
+old_wrist_scaphoid,wrist_scaphoid,68,Retained by v0.3 high-specificity anatomy logic.
+old_wrist_scaphoid,foot_navicular,4,Removed from the wrist cohort because v0.3 identified explicit foot-navicular anatomy.
+old_not_wrist,foot_navicular,9,Consistently excluded from wrist-scaphoid analysis.
+old_not_wrist,ambiguous,7,Insufficient anatomy evidence; reserved for physician adjudication.
+old_not_wrist,wrist_scaphoid,0,No additional wrist-scaphoid episodes were added relative to the prior heuristic.
