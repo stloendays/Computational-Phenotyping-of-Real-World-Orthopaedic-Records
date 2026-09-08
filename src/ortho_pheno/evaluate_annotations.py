@@ -46,8 +46,10 @@ def categorical_metrics(gold, pred, positive_label=None):
         }
     accuracy = _safe_div(sum(g == p for g, p in zip(gold, pred)), len(gold))
     macro_f1 = _safe_div(sum(v['f1'] for v in per_label.values()), len(per_label))
-    out = {'n': len(gold), 'accuracy': accuracy, 'macro_f1': macro_f1,
-           'cohen_kappa': cohen_kappa(gold, pred), 'per_label': per_label}
+    out = {
+        'n': len(gold), 'accuracy': accuracy, 'macro_f1': macro_f1,
+        'cohen_kappa': cohen_kappa(gold, pred), 'per_label': per_label,
+    }
     if positive_label is not None:
         if positive_label not in per_label:
             raise ValueError(f'positive label {positive_label!r} not present')
@@ -83,15 +85,19 @@ def multilabel_metrics(gold_sets, pred_sets, label_space=None):
         fn = sum(label in g and label not in p for g, p in zip(gold_sets, pred_sets))
         precision = _safe_div(tp, tp + fp); recall = _safe_div(tp, tp + fn)
         f1 = _safe_div(2 * precision * recall, precision + recall)
-        per_label[label] = {'support': tp + fn, 'tp': tp, 'fp': fp, 'fn': fn,
-                            'precision': precision, 'recall': recall, 'f1': f1}
+        per_label[label] = {
+            'support': tp + fn, 'tp': tp, 'fp': fp, 'fn': fn,
+            'precision': precision, 'recall': recall, 'f1': f1,
+        }
         total_tp += tp; total_fp += fp; total_fn += fn
     micro_precision = _safe_div(total_tp, total_tp + total_fp)
     micro_recall = _safe_div(total_tp, total_tp + total_fn)
     micro_f1 = _safe_div(2 * micro_precision * micro_recall, micro_precision + micro_recall)
     macro_f1 = _safe_div(sum(v['f1'] for v in per_label.values()), len(per_label))
     exact = _safe_div(sum(g == p for g, p in zip(gold_sets, pred_sets)), len(gold_sets))
-    cardinality_error = _safe_div(sum(abs(len(g) - len(p)) for g, p in zip(gold_sets, pred_sets)), len(gold_sets))
+    cardinality_error = _safe_div(
+        sum(abs(len(g) - len(p)) for g, p in zip(gold_sets, pred_sets)), len(gold_sets)
+    )
     return {
         'n': len(gold_sets), 'labels': label_space,
         'micro_precision': micro_precision, 'micro_recall': micro_recall,
@@ -102,22 +108,56 @@ def multilabel_metrics(gold_sets, pred_sets, label_space=None):
     }
 
 
-def _load_joined(gold_path, pred_path, id_col, label_col):
-    def load(path):
-        with open(path, encoding='utf-8-sig', newline='') as f:
-            rows = list(csv.DictReader(f))
-        out = {}
-        for r in rows:
-            sid = r[id_col].strip()
-            if sid in out:
-                raise ValueError(f'duplicate study_id in {path}: {sid}')
-            out[sid] = r[label_col].strip()
-        return out
-    g, p = load(gold_path), load(pred_path)
-    common = sorted(set(g) & set(p))
+def _load_label_file(path, id_col, label_col):
+    with open(path, encoding='utf-8-sig', newline='') as f:
+        rows = list(csv.DictReader(f))
+    out = {}
+    for row in rows:
+        sid = row[id_col].strip()
+        if sid in out:
+            raise ValueError(f'duplicate study_id in {path}: {sid}')
+        out[sid] = row[label_col].strip()
+    return out
+
+
+def load_joined(gold_path, pred_path, id_col, gold_label_col, pred_label_col,
+                gold_label_map=None):
+    gold = _load_label_file(gold_path, id_col, gold_label_col)
+    pred = _load_label_file(pred_path, id_col, pred_label_col)
+    common = sorted(set(gold) & set(pred))
     if not common:
         raise ValueError('no overlapping study IDs')
-    return common, g, p, sorted(set(g)-set(p)), sorted(set(p)-set(g))
+
+    blank_gold_ids = [sid for sid in common if not gold[sid]]
+    common = [sid for sid in common if gold[sid]]
+
+    mapped_out_ids = []
+    if gold_label_map is not None:
+        mapped = {}
+        for sid in common:
+            label = gold[sid]
+            if label not in gold_label_map:
+                raise ValueError(f'gold label missing from supplied mapping: {label!r}')
+            new_label = gold_label_map[label]
+            if new_label is None:
+                mapped_out_ids.append(sid)
+            else:
+                mapped[sid] = str(new_label)
+        gold = mapped
+        common = [sid for sid in common if sid in gold]
+
+    if not common:
+        raise ValueError('no evaluable study IDs after blank/mapping exclusions')
+
+    return {
+        'ids': common,
+        'gold': gold,
+        'pred': pred,
+        'missing_prediction_ids': sorted(set(gold) - set(pred)),
+        'extra_prediction_ids': sorted(set(pred) - set(gold)),
+        'blank_gold_ids_excluded': blank_gold_ids,
+        'mapped_out_gold_ids_excluded': mapped_out_ids,
+    }
 
 
 def main():
@@ -125,21 +165,40 @@ def main():
     ap.add_argument('--gold', required=True)
     ap.add_argument('--pred', required=True)
     ap.add_argument('--id-col', default='study_id')
-    ap.add_argument('--label-col', required=True)
-    ap.add_argument('--mode', choices=['categorical','multilabel'], required=True)
+    ap.add_argument('--label-col', help='legacy shortcut when gold and prediction columns have the same name')
+    ap.add_argument('--gold-label-col')
+    ap.add_argument('--pred-label-col')
+    ap.add_argument('--gold-map-json', help='JSON object mapping gold labels to evaluation labels; null excludes a class')
+    ap.add_argument('--mode', choices=['categorical', 'multilabel'], required=True)
     ap.add_argument('--positive-label')
     ap.add_argument('--labels', help='pipe-separated fixed multilabel vocabulary')
     ap.add_argument('--output', required=True)
     args = ap.parse_args()
-    common, g, p, missing_pred, extra_pred = _load_joined(args.gold, args.pred, args.id_col, args.label_col)
+
+    gold_col = args.gold_label_col or args.label_col
+    pred_col = args.pred_label_col or args.label_col
+    if not gold_col or not pred_col:
+        ap.error('specify --gold-label-col and --pred-label-col, or use --label-col when names match')
+
+    gold_map = json.loads(args.gold_map_json) if args.gold_map_json else None
+    joined = load_joined(args.gold, args.pred, args.id_col, gold_col, pred_col, gold_map)
+    ids = joined['ids']; gold = joined['gold']; pred = joined['pred']
+
     if args.mode == 'categorical':
-        metrics = categorical_metrics([g[x] for x in common], [p[x] for x in common], args.positive_label)
+        metrics = categorical_metrics([gold[x] for x in ids], [pred[x] for x in ids], args.positive_label)
     else:
         labels = args.labels.split('|') if args.labels else None
-        metrics = multilabel_metrics([_parse_multilabel(g[x]) for x in common], [_parse_multilabel(p[x]) for x in common], labels)
-    metrics['matched_ids'] = len(common)
-    metrics['missing_prediction_ids'] = len(missing_pred)
-    metrics['extra_prediction_ids'] = len(extra_pred)
+        metrics = multilabel_metrics(
+            [_parse_multilabel(gold[x]) for x in ids],
+            [_parse_multilabel(pred[x]) for x in ids],
+            labels,
+        )
+
+    metrics['matched_ids'] = len(ids)
+    metrics['missing_prediction_ids'] = len(joined['missing_prediction_ids'])
+    metrics['extra_prediction_ids'] = len(joined['extra_prediction_ids'])
+    metrics['blank_gold_ids_excluded'] = len(joined['blank_gold_ids_excluded'])
+    metrics['mapped_out_gold_ids_excluded'] = len(joined['mapped_out_gold_ids_excluded'])
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     Path(args.output).write_text(json.dumps(metrics, ensure_ascii=False, indent=2), encoding='utf-8')
 
