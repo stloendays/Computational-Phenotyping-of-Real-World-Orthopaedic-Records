@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="760" viewBox="0 0 1500 760" role="img" aria-labelledby="title desc">
+<title id="title">Validation-first computational phenotyping framework</title>
+<desc id="desc">Fixed-data orthopaedic EHR workflow separating private clinical data from public aggregate outputs and freezing model comparison after physician adjudication.</desc>
+<style>
+text{font-family:Arial,Helvetica,sans-serif;fill:#111}.title{font-size:24px;font-weight:700}.subtitle{font-size:14px;fill:#555}.label{font-size:14px;font-weight:600}.small{font-size:12px;fill:#444}.tiny{font-size:10px;fill:#555}.box{fill:#fff;stroke:#111;stroke-width:1.5}.soft{fill:#f3f3f3;stroke:#777;stroke-width:1.2}.dark{fill:#222;stroke:#111;stroke-width:1.2}.white{fill:#fff}.rule{stroke:#111;stroke-width:1.5;fill:none}
+</style>
+<text x="60" y="55" class="title">Figure 1. Validation-first computational phenotyping framework</text>
+<text x="60" y="82" class="subtitle">Fixed local data; no additional hospital data assumed</text>
+<rect x="40" y="115" width="1050" height="555" rx="12" class="soft"/>
+<text x="65" y="145" class="label">PRIVATE ANALYTIC ZONE</text>
+<text x="65" y="168" class="small">Raw records, clinical text, pseudonymous study IDs and physician labels never enter the public repository</text>
+<rect x="75" y="220" width="170" height="90" rx="8" class="box"/><text x="160" y="255" class="label" text-anchor="middle">18 raw exports</text><text x="160" y="280" class="small" text-anchor="middle">12 XLSX + 6 legacy XLS</text>
+<line x1="250" y1="265" x2="287" y2="265" class="rule"/><polygon points="287,265 279,261 279,269" fill="#111"/>
+<rect x="295" y="220" width="190" height="90" rx="8" class="box"/><text x="390" y="255" class="label" text-anchor="middle">Admission reconstruction</text><text x="390" y="280" class="small" text-anchor="middle">deduplicate diagnosis rows</text>
+<line x1="490" y1="265" x2="527" y2="265" class="rule"/><polygon points="527,265 519,261 519,269" fill="#111"/>
+<rect x="535" y="220" width="190" height="90" rx="8" class="box"/><text x="630" y="255" class="label" text-anchor="middle">Disease / anatomy</text><text x="630" y="280" class="small" text-anchor="middle">explicit uncertain states</text>
+<line x1="730" y1="265" x2="767" y2="265" class="rule"/><polygon points="767,265 759,261 759,269" fill="#111"/>
+<rect x="775" y="220" width="190" height="90" rx="8" class="box"/><text x="870" y="255" class="label" text-anchor="middle">Clinical state</text><text x="870" y="280" class="small" text-anchor="middle">source-restricted phenotypes</text>
+<rect x="235" y="375" width="220" height="105" rx="8" class="box"/><text x="345" y="410" class="label" text-anchor="middle">Procedure relevance</text><text x="345" y="435" class="small" text-anchor="middle">Does this operation treat</text><text x="345" y="454" class="small" text-anchor="middle">the target disease?</text>
+<line x1="460" y1="428" x2="495" y2="428" class="rule"/><polygon points="495,428 487,424 487,432" fill="#111"/>
+<rect x="505" y="375" width="220" height="105" rx="8" class="box"/><text x="615" y="410" class="label" text-anchor="middle">Procedure components</text><text x="615" y="435" class="small" text-anchor="middle">multi-label operative</text><text x="615" y="454" class="small" text-anchor="middle">phenotype extraction</text>
+<line x1="730" y1="428" x2="765" y2="428" class="rule"/><polygon points="765,428 757,424 757,432" fill="#111"/>
+<rect x="775" y="375" width="250" height="105" rx="8" class="dark"/><text x="900" y="409" class="label white" text-anchor="middle">Physician reference standard</text><text x="900" y="435" class="small white" text-anchor="middle">primary review + ~20%</text><text x="900" y="454" class="small white" text-anchor="middle">independent second review</text>
+<line x1="900" y1="480" x2="900" y2="520" class="rule"/><line x1="325" y1="520" x2="875" y2="520" class="rule"/><line x1="325" y1="520" x2="325" y2="545" class="rule"/><line x1="610" y1="520" x2="610" y2="545" class="rule"/><line x1="875" y1="520" x2="875" y2="545" class="rule"/>
+<rect x="200" y="545" width="250" height="78" rx="8" class="box"/><text x="325" y="578" class="label" text-anchor="middle">Pre-gold deterministic baseline</text><text x="325" y="601" class="small" text-anchor="middle">SHA-256 frozen before gold</text>
+<rect x="505" y="545" width="210" height="78" rx="8" class="box"/><text x="610" y="578" class="label" text-anchor="middle">LLM-assisted</text><text x="610" y="601" class="small" text-anchor="middle">same locked labels</text>
+<rect x="770" y="545" width="210" height="78" rx="8" class="box"/><text x="875" y="578" class="label" text-anchor="middle">Hybrid system</text><text x="875" y="601" class="small" text-anchor="middle">same locked labels</text>
+<rect x="1130" y="115" width="330" height="555" rx="12" class="box"/><text x="1155" y="145" class="label">PUBLIC REPRODUCIBILITY ZONE</text>
+<rect x="1160" y="180" width="265" height="44" rx="6" class="soft"/><text x="1292" y="207" class="small" text-anchor="middle">Versioned code + tests</text>
+<rect x="1160" y="248" width="265" height="44" rx="6" class="soft"/><text x="1292" y="275" class="small" text-anchor="middle">Aggregate cohort audits</text>
+<rect x="1160" y="316" width="265" height="44" rx="6" class="soft"/><text x="1292" y="343" class="small" text-anchor="middle">Small-cell suppression</text>
+<rect x="1160" y="384" width="265" height="44" rx="6" class="soft"/><text x="1292" y="411" class="small" text-anchor="middle">Figure / table generators</text>
+<rect x="1160" y="452" width="265" height="44" rx="6" class="soft"/><text x="1292" y="479" class="small" text-anchor="middle">Freeze manifests + hashes</text>
+<rect x="1160" y="520" width="265" height="44" rx="6" class="soft"/><text x="1292" y="547" class="small" text-anchor="middle">No row-level clinical data</text>
+<line x1="1080" y1="390" x2="1120" y2="390" class="rule"/><polygon points="1120,390 1112,386 1112,394" fill="#111"/><text x="1100" y="375" class="tiny" text-anchor="middle">aggregate only</text>
+</svg>
