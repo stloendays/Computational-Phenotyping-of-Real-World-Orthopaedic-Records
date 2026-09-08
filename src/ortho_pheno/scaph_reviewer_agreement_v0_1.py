@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """Calculate scaphoid physician inter-rater agreement before adjudication.
 
-Primary and Reviewer-2 files remain local. The script can write:
+Primary and Reviewer-2 files remain local. The script writes aggregate agreement
+metrics plus a PRIVATE disagreement list containing study IDs for adjudication.
 
-- an aggregate JSON report suitable for manuscript analysis after privacy review;
-- a PRIVATE disagreement CSV containing study IDs for adjudication.
+Agreement is hierarchical:
 
-No clinical text is written to either output.
+- duration presence is scored on all double-reviewed state rows;
+- duration unit/basis/value are scored only when both reviewers mark duration=yes;
+- procedure relevance is scored on all double-reviewed procedure rows;
+- procedure components are scored only when both reviewers mark relevance=yes.
+
+This prevents protocol-correct blank fields from being misclassified as missing
+labels.
 """
 from __future__ import annotations
 
@@ -16,6 +22,14 @@ import argparse
 import csv
 import json
 import math
+
+UNIT_TO_DAYS = {
+    'hours':1/24,
+    'days':1.0,
+    'weeks':7.0,
+    'months':30.44,
+    'years':365.25,
+}
 
 
 def read_rows(path: Path):
@@ -50,12 +64,14 @@ def cohen_kappa(a, b):
     return (observed - expected) / (1.0 - expected)
 
 
-def categorical_agreement(primary_rows, reviewer2_rows, primary_field, reviewer2_field, layer, disagreement_rows):
+def categorical_agreement(primary_rows, reviewer2_rows, primary_field, reviewer2_field, layer, disagreement_rows, include=None):
     p = index(primary_rows); r = index(reviewer2_rows)
     if not set(r) <= set(p):
         raise ValueError(f'{layer}: reviewer2 IDs are not a subset of primary IDs')
     a=[]; b=[]
     for sid in sorted(r):
+        if include is not None and not include(p[sid], r[sid]):
+            continue
         x=p[sid].get(primary_field,'').strip(); y=r[sid].get(reviewer2_field,'').strip()
         if not x or not y:
             raise ValueError(f'{layer}: incomplete double-review label for {sid}')
@@ -72,36 +88,52 @@ def categorical_agreement(primary_rows, reviewer2_rows, primary_field, reviewer2
     }
 
 
+def both_duration_yes(primary_row, reviewer2_row):
+    return (
+        primary_row.get('gold_relevant_duration_present','').strip() == 'yes'
+        and reviewer2_row.get('reviewer2_gold_relevant_duration_present','').strip() == 'yes'
+    )
+
+
+def both_procedure_relevant(primary_row, reviewer2_row):
+    return (
+        primary_row.get('gold_target_disease_procedure_present','').strip() == 'yes'
+        and reviewer2_row.get('reviewer2_gold_target_disease_procedure_present','').strip() == 'yes'
+    )
+
+
 def duration_numeric_agreement(primary_rows, reviewer2_rows, disagreement_rows):
     p=index(primary_rows); r=index(reviewer2_rows)
     pairs=[]
     for sid in sorted(r):
-        p_present=p[sid].get('gold_relevant_duration_present','').strip()
-        r_present=r[sid].get('reviewer2_gold_relevant_duration_present','').strip()
-        if p_present=='yes' and r_present=='yes':
-            try:
-                pv=float(p[sid].get('gold_relevant_duration_value',''))
-                rv=float(r[sid].get('reviewer2_gold_relevant_duration_value',''))
-            except Exception:
-                continue
-            pu=p[sid].get('gold_relevant_duration_unit','').strip()
-            ru=r[sid].get('reviewer2_gold_relevant_duration_unit','').strip()
-            if pu==ru and pv>0 and rv>0:
-                pairs.append((pv,rv))
-                if not math.isclose(pv,rv,rel_tol=1e-9,abs_tol=1e-9):
-                    disagreement_rows.append({
-                        'study_id':sid,'layer':'state_duration','field':'duration_value_same_unit',
-                        'reviewer1_value':str(pv),'reviewer2_value':str(rv),
-                    })
+        if not both_duration_yes(p[sid],r[sid]):
+            continue
+        try:
+            pv=float(p[sid].get('gold_relevant_duration_value',''))
+            rv=float(r[sid].get('reviewer2_gold_relevant_duration_value',''))
+        except Exception as exc:
+            raise ValueError(f'duration numeric agreement: invalid numeric duration for {sid}') from exc
+        pu=p[sid].get('gold_relevant_duration_unit','').strip()
+        ru=r[sid].get('reviewer2_gold_relevant_duration_unit','').strip()
+        if pu not in UNIT_TO_DAYS or ru not in UNIT_TO_DAYS:
+            raise ValueError(f'duration numeric agreement: invalid duration unit for {sid}')
+        pdays=pv*UNIT_TO_DAYS[pu]
+        rdays=rv*UNIT_TO_DAYS[ru]
+        pairs.append((pdays,rdays))
+        if not math.isclose(pdays,rdays,rel_tol=0.01,abs_tol=0.5):
+            disagreement_rows.append({
+                'study_id':sid,'layer':'state_duration','field':'duration_normalized_days',
+                'reviewer1_value':f'{pdays:.6g}','reviewer2_value':f'{rdays:.6g}',
+            })
     if not pairs:
-        return {'n_same_unit_yes_yes':0,'exact_numeric_agreement':None,'median_absolute_difference':None}
+        return {'n_both_duration_yes':0,'normalized_numeric_agreement':None,'median_absolute_difference_days':None}
     diffs=sorted(abs(a-b) for a,b in pairs)
     mid=len(diffs)//2
     median=diffs[mid] if len(diffs)%2 else (diffs[mid-1]+diffs[mid])/2
     return {
-        'n_same_unit_yes_yes':len(pairs),
-        'exact_numeric_agreement':sum(math.isclose(a,b,rel_tol=1e-9,abs_tol=1e-9) for a,b in pairs)/len(pairs),
-        'median_absolute_difference':median,
+        'n_both_duration_yes':len(pairs),
+        'normalized_numeric_agreement':sum(math.isclose(a,b,rel_tol=0.01,abs_tol=0.5) for a,b in pairs)/len(pairs),
+        'median_absolute_difference_days':median,
     }
 
 
@@ -118,15 +150,15 @@ def build(review_dir: Path):
         'anatomy':categorical_agreement(anatomy,anatomy2,'gold_anatomy_label','reviewer2_gold_anatomy_label','anatomy',disagreements),
         'scaphoid_state':categorical_agreement(state,state2,'gold_scaphoid_state','reviewer2_gold_scaphoid_state','state',disagreements),
         'duration_present':categorical_agreement(state,state2,'gold_relevant_duration_present','reviewer2_gold_relevant_duration_present','duration_present',disagreements),
-        'duration_unit':categorical_agreement(state,state2,'gold_relevant_duration_unit','reviewer2_gold_relevant_duration_unit','duration_unit',disagreements),
-        'duration_basis':categorical_agreement(state,state2,'gold_duration_basis','reviewer2_gold_duration_basis','duration_basis',disagreements),
+        'duration_unit_when_both_present':categorical_agreement(state,state2,'gold_relevant_duration_unit','reviewer2_gold_relevant_duration_unit','duration_unit',disagreements,include=both_duration_yes),
+        'duration_basis_when_both_present':categorical_agreement(state,state2,'gold_duration_basis','reviewer2_gold_duration_basis','duration_basis',disagreements,include=both_duration_yes),
         'procedure_relevance':categorical_agreement(procedure,procedure2,'gold_target_disease_procedure_present','reviewer2_gold_target_disease_procedure_present','procedure_relevance',disagreements),
-        'internal_fixation':categorical_agreement(procedure,procedure2,'gold_internal_fixation','reviewer2_gold_internal_fixation','internal_fixation',disagreements),
-        'bone_graft':categorical_agreement(procedure,procedure2,'gold_bone_graft','reviewer2_gold_bone_graft','bone_graft',disagreements),
-        'reconstruction':categorical_agreement(procedure,procedure2,'gold_reconstruction','reviewer2_gold_reconstruction','reconstruction',disagreements),
-        'fusion':categorical_agreement(procedure,procedure2,'gold_fusion','reviewer2_gold_fusion','fusion',disagreements),
+        'internal_fixation_when_both_relevant':categorical_agreement(procedure,procedure2,'gold_internal_fixation','reviewer2_gold_internal_fixation','internal_fixation',disagreements,include=both_procedure_relevant),
+        'bone_graft_when_both_relevant':categorical_agreement(procedure,procedure2,'gold_bone_graft','reviewer2_gold_bone_graft','bone_graft',disagreements,include=both_procedure_relevant),
+        'reconstruction_when_both_relevant':categorical_agreement(procedure,procedure2,'gold_reconstruction','reviewer2_gold_reconstruction','reconstruction',disagreements,include=both_procedure_relevant),
+        'fusion_when_both_relevant':categorical_agreement(procedure,procedure2,'gold_fusion','reviewer2_gold_fusion','fusion',disagreements,include=both_procedure_relevant),
     }
-    metrics['duration_numeric_same_unit'] = duration_numeric_agreement(state,state2,disagreements)
+    metrics['duration_numeric_normalized'] = duration_numeric_agreement(state,state2,disagreements)
     metrics['total_field_disagreements'] = len(disagreements)
     return metrics, disagreements
 
