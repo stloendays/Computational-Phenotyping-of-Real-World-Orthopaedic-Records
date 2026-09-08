@@ -1,0 +1,91 @@
+version: v0.2
+status: frozen_for_cohort_audit_v0.1
+scope: fixed_local_dataset
+
+principles:
+  unit_of_analysis: admission_episode
+  no_raw_row_as_independent_sample: true
+  source_provenance_required: true
+  no_future_local_data_assumed: true
+  public_small_cell_threshold: 5
+  public_inference_suppressed_if_small_cell_recoverable: true
+
+hallux_valgus:
+  strict_positive_terms:
+    - 拇外翻
+    - 踇外翻
+    - 拇趾外翻
+    - 踇趾外翻
+    - 拇囊炎
+    - 踇囊炎
+  supportive_terms:
+    - 第一跖趾关节
+    - 内侧突出
+    - 外偏
+  procedure_labels:
+    osteotomy: [截骨, osteotomy]
+    chevron: [Chevron, chevron]
+    akin: [Akin, akin]
+    scarf: [Scarf, scarf]
+    fusion: [融合, fusion, arthrodesis]
+    k_wire: [克氏针, K-wire, Kirschner]
+    resection: [切除, resection]
+    soft_tissue: [软组织, 韧带, 肌腱, 关节囊, 松解, tendon, ligament]
+  bilateral_terms: [双足, 双侧, 双拇, 双趾]
+
+scaphoid:
+  strict_wrist_positive_terms:
+    - 腕舟骨
+    - 手舟骨
+    - 舟骨腰部
+    - 舟骨近极
+    - 舟骨远极
+  wrist_supportive_context: [腕, 手, 桡侧, 鼻烟窝]
+  foot_exclusion_context: [足舟骨, 足部, 踝, 跗骨]
+  chronic_nonunion_terms: [骨不连, 不连接, 不愈合, 陈旧性, 陈旧, 慢性, SNAC]
+  chronic_nonunion_source_scope:
+    include: [主要诊断名称, 主要诊断描述, 其他诊断名称, 其他诊断描述, 主诉, 专科查体]
+    exclude: [手术名称, 手术记录内容]
+    rationale: avoid_circular_case_definition_when_comparing_treatment
+  procedure_labels:
+    internal_fixation: [内固定, 螺钉, 空心钉, 钢针, screw]
+    bone_graft: [植骨, 取骨, bone graft]
+    reconstruction: [重建, reconstruction]
+    fusion: [融合, arthrodesis]
+  primary_comparison_label: established_chronic_or_nonunion_vs_other_wrist_scaphoid
+  causal_interpretation: prohibited_without_longitudinal_incident_nonunion_evidence
+  calendar_sensitivity:
+    primary_consistent_era: 2023-2025
+
+first_cmc_oa:
+  strict_positive_terms:
+    - 第一腕掌关节炎
+    - 第一腕掌关节骨关节炎
+    - 第一掌腕关节炎
+    - 拇指腕掌关节炎
+    - 拇指CMC关节炎
+    - 第一CMC关节炎
+    - trapeziometacarpal osteoarthritis
+  supportive_terms: [大多角骨, 第一掌骨基底, 拇指基底, CMC]
+  broad_terms_not_sufficient_alone: [腕关节炎, 腕掌关节炎]
+  competing_terms:
+    - 桡腕关节炎
+    - 尺腕关节炎
+    - 类风湿性腕关节炎
+    - 痛风性腕关节炎
+    - 创伤性腕关节炎
+    - 滑膜炎
+  procedure_labels:
+    trapeziectomy: [大多角骨切除, trapeziectomy]
+    tendon_procedure: [肌腱, tendon]
+    ligament_procedure: [韧带, ligament]
+    arthroplasty: [关节成形, 置换, arthroplasty]
+    fusion: [融合, arthrodesis]
+
+precedence_rules:
+  - explicit_anatomy_overrides_generic_diagnosis
+  - foot_navicular_context_excludes_wrist_scaphoid
+  - first_cmc_requires_specific_anatomical_support
+  - missing_text_is_not_negative_phenotype
+  - outcome_defining_terms_must_not_be_reused_as_predictors
+  - operative_text_must_not_define_scaphoid_case_status_for_treatment_comparison
