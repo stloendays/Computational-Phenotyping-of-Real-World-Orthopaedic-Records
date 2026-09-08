@@ -9,6 +9,10 @@ candidates. Stage 2 is generated only after Stage-1 anatomy labels are complete
 and selects *physician-confirmed* wrist-scaphoid records for state/procedure
 review. This avoids verification bias from reviewing only deterministic positives.
 
+Stage 2 also captures a physician-adjudicated wrist-related duration variable for
+a prespecified exploratory secondary hypothesis. Automated duration-parser output
+is never shown to the reviewer.
+
 Patient-level outputs contain protected clinical text and pseudonymous study IDs.
 They MUST remain local and are intended for ``annotations/private/`` only.
 
@@ -156,6 +160,11 @@ def choose_double_review(rows, layer: str, salt: str, fraction: float):
 
 
 def build_stage1(raw_dir: Path, output_dir: Path, salt: str, fraction: float):
+    """Build the frozen Stage-1 anatomy packet.
+
+    Keep this output schema stable: the pre-annotation Stage-1 packet has already
+    been frozen by SHA-256. Stage-2 extensions must not change Stage-1 contents.
+    """
     records = collect(raw_dir)
     rows = []
     for key,rec in records.items():
@@ -221,6 +230,10 @@ def build_stage2(raw_dir: Path, output_dir: Path, salt: str, anatomy_gold_path: 
             'complaint_text':join(rec['complaint']),
             'physical_exam_text':join(rec['exam']),
             'gold_scaphoid_state':'',
+            'gold_relevant_duration_present':'',
+            'gold_relevant_duration_value':'',
+            'gold_relevant_duration_unit':'',
+            'gold_duration_basis':'',
             'reviewer_confidence':'',
             'reviewer_comment':'',
         })
@@ -239,7 +252,7 @@ def build_stage2(raw_dir: Path, output_dir: Path, salt: str, anatomy_gold_path: 
             })
 
     write_csv(output_dir/'scaphoid_state_review.csv',state_rows,
-              ['study_id','diagnosis_text','complaint_text','physical_exam_text','gold_scaphoid_state','reviewer_confidence','reviewer_comment'])
+              ['study_id','diagnosis_text','complaint_text','physical_exam_text','gold_scaphoid_state','gold_relevant_duration_present','gold_relevant_duration_value','gold_relevant_duration_unit','gold_duration_basis','reviewer_confidence','reviewer_comment'])
     write_csv(output_dir/'scaphoid_procedure_review.csv',procedure_rows,
               ['study_id','operation_name_text','operation_note_text','gold_target_disease_procedure_present','gold_internal_fixation','gold_bone_graft','gold_reconstruction','gold_fusion','reviewer_confidence','reviewer_comment'])
 
@@ -249,6 +262,7 @@ def build_stage2(raw_dir: Path, output_dir: Path, salt: str, anatomy_gold_path: 
         'physician_confirmed_wrist_scaphoid':len(state_rows),
         'wrist_with_detailed_note_module':len(procedure_rows),
         'downstream_double_review':len(doubles),
+        'duration_fields_added_to_state_review':4,
     }
 
 
