@@ -1,4 +1,4 @@
 disease,candidate_admissions,strict_phenotype_admissions,female_percent,age_median,age_q1,age_q3,bmi_median,with_complaint,with_physical_exam,with_any_surgery_record,with_detailed_operating_note,with_any_exam_record,with_cbc,with_coagulation,with_esr,with_crp,with_liver_function,with_kidney_function,with_electrolytes
 hallux_valgus,200,193,82.4,54.0,40.0,62.0,23.5,150,121,151,114,161,161,162,3,9,158,153,126
 first_cmc_oa,79,28,75.0,54.0,46.8,60.2,24.0,22,18,24,18,24,24,24,1,2,23,23,20
-scaphoid_fracture,88,72,9.7,33.5,26.0,42.0,25.1,59,35,46,34,46,43,42,2,6,41,39,29
+scaphoid_fracture,88,68,8.8,34.0,26.8,45.2,25.1,55,32,43,31,43,40,39,1,5,38,36,26
