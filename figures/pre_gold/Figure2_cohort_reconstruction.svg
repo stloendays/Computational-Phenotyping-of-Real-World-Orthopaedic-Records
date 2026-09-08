@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+<title id="title">Cohort reconstruction and scaphoid anatomy disambiguation</title>
+<desc id="desc">Four-panel audit showing raw-row inflation, candidate-to-strict cohort reduction, scaphoid anatomy partition, and rule-version transition.</desc>
+<style>text{font-family:Arial,Helvetica,sans-serif;fill:#111}.title{font-size:24px;font-weight:700}.label{font-size:14px;font-weight:600}.small{font-size:12px;fill:#444}.tiny{font-size:10px;fill:#555}.box{fill:#fff;stroke:#111;stroke-width:1.5}.soft{fill:#f3f3f3;stroke:#777;stroke-width:1.2}.dark{fill:#222;stroke:#111;stroke-width:1.2}.white{fill:#fff}.rule{stroke:#111;stroke-width:1.5;fill:none}</style>
+<text x="55" y="50" class="title">Figure 2. Cohort reconstruction and anatomy disambiguation</text>
+<text x="65" y="105" class="label">A   Raw-row inflation in diagnosis/demographics exports</text>
+<text x="70" y="173" class="small">Hallux valgus</text><rect x="260" y="155" width="340.1" height="30" rx="3" class="dark"/><text x="610" y="176" class="small">10.85 rows/admission</text>
+<text x="70" y="245" class="small">First-CMC OA</text><rect x="260" y="227" width="388.7" height="30" rx="3" class="dark"/><text x="658" y="248" class="small">12.40 rows/admission</text>
+<text x="70" y="317" class="small">Scaphoid retrieval</text><rect x="260" y="299" width="420" height="30" rx="3" class="dark"/><text x="690" y="320" class="small">13.40 rows/admission</text>
+<text x="70" y="365" class="small">Raw diagnosis rows are not independent analytical units.</text>
+<text x="830" y="105" class="label">B   Broad candidate retrieval → deterministic strict phenotype</text>
+<text x="835" y="173" class="small">Hallux valgus</text><rect x="1035" y="155" width="230" height="30" rx="3" class="soft"/><rect x="1035" y="155" width="222.0" height="30" rx="3" class="dark"/><text x="1280" y="176" class="small">193/200 (96.5%)</text>
+<text x="835" y="245" class="small">First-CMC OA</text><rect x="1035" y="227" width="230" height="30" rx="3" class="soft"/><rect x="1035" y="227" width="81.5" height="30" rx="3" class="dark"/><text x="1280" y="248" class="small">28/79 (35.4%)</text>
+<text x="835" y="317" class="small">Scaphoid retrieval</text><rect x="1035" y="299" width="230" height="30" rx="3" class="soft"/><rect x="1035" y="299" width="177.7" height="30" rx="3" class="dark"/><text x="1280" y="320" class="small">68/88 (77.3%)</text>
+<text x="835" y="365" class="small">Strict counts remain algorithmic outputs until physician adjudication.</text>
+<text x="65" y="455" class="label">C   Scaphoid candidate anatomy under phenotype v0.3</text>
+<rect x="70" y="500" width="502.3" height="70" fill="#222" stroke="#111"/><text x="321" y="530" class="small white" text-anchor="middle">Wrist scaphoid</text><text x="321" y="552" class="small white" text-anchor="middle">68/88 (77.3%)</text>
+<rect x="572.3" y="500" width="96.0" height="70" fill="#777" stroke="#111"/><text x="620" y="530" class="small white" text-anchor="middle">Foot navicular</text><text x="620" y="552" class="small white" text-anchor="middle">13/88 (14.8%)</text>
+<rect x="668.3" y="500" width="51.7" height="70" fill="#d9d9d9" stroke="#111"/><text x="694" y="530" class="small" text-anchor="middle">Ambiguous</text><text x="694" y="552" class="small" text-anchor="middle">7/88</text>
+<text x="70" y="605" class="small">Seven ambiguous episodes are preserved for physician adjudication rather than forced into a binary class.</text>
+<text x="830" y="455" class="label">D   Superseded heuristic → phenotype v0.3</text>
+<rect x="875" y="505" width="235" height="70" rx="8" class="soft"/><text x="992" y="535" class="label" text-anchor="middle">Previous wrist selection</text><text x="992" y="558" class="small" text-anchor="middle">72 episodes</text>
+<rect x="1250" y="485" width="245" height="70" rx="8" class="dark"/><text x="1372" y="516" class="label white" text-anchor="middle">Retained wrist scaphoid</text><text x="1372" y="539" class="small white" text-anchor="middle">68 episodes</text>
+<rect x="1250" y="595" width="245" height="70" rx="8" class="soft"/><text x="1372" y="626" class="label" text-anchor="middle">Removed as foot navicular</text><text x="1372" y="649" class="small" text-anchor="middle">4 episodes</text>
+<line x1="1115" y1="530" x2="1240" y2="520" class="rule"/><polygon points="1240,520 1232,516 1232,524" fill="#111"/><text x="1170" y="505" class="small" text-anchor="middle">68</text>
+<line x1="1115" y1="548" x2="1240" y2="625" class="rule"/><polygon points="1240,625 1232,621 1232,629" fill="#111"/><text x="1170" y="610" class="small" text-anchor="middle">4</text>
+<text x="875" y="720" class="small">New wrist additions relative to the superseded heuristic: 0</text>
+<text x="875" y="745" class="small">The revision removed explicit anatomical contamination rather than increasing sample size.</text>
+<text x="65" y="855" class="tiny">All panels use public aggregate audit outputs; no patient-level data are shown.</text>
+</svg>
