@@ -169,6 +169,7 @@ def build(root: Path, out_root: Path):
                 'domain': domain,
                 'operation_name_text': join_parts(r['operation_name']),
                 'operation_note_text': join_parts(r['operation_note']),
+                'gold_target_disease_procedure_present': '',
                 'gold_procedure_labels': '',
                 'reviewer_confidence': '',
                 'reviewer_comment': '',
@@ -180,7 +181,7 @@ def build(root: Path, out_root: Path):
     write_csv(private_dir/'scaphoid_state_annotation.csv', scaphoid_state_rows,
               ['study_id','diagnosis_text','complaint_text','physical_exam_text','gold_scaphoid_state','evidence_source','reviewer_confidence','reviewer_comment'])
     write_csv(private_dir/'procedure_annotation.csv', procedure_rows,
-              ['study_id','domain','operation_name_text','operation_note_text','gold_procedure_labels','reviewer_confidence','reviewer_comment'])
+              ['study_id','domain','operation_name_text','operation_note_text','gold_target_disease_procedure_present','gold_procedure_labels','reviewer_confidence','reviewer_comment'])
 
     by_stratum = defaultdict(list)
     for item in double_review_candidates:
