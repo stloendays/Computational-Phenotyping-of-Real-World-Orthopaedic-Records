@@ -13,6 +13,10 @@ Stage 2 also captures a physician-adjudicated wrist-related duration variable fo
 a prespecified exploratory secondary hypothesis. Automated duration-parser output
 is never shown to the reviewer.
 
+The generator writes independent Reviewer-2 subset packets for the prespecified
+~20% double-review samples. Reviewer-2 files contain source text plus separate
+``reviewer2_*`` label columns and never contain Reviewer-1 labels.
+
 Patient-level outputs contain protected clinical text and pseudonymous study IDs.
 They MUST remain local and are intended for ``annotations/private/`` only.
 
@@ -159,11 +163,21 @@ def choose_double_review(rows, layer: str, salt: str, fraction: float):
     return [{'study_id':sid,'layer':layer,'hash_score':f'{score:.8f}'} for score,sid in scored[:n]]
 
 
+def selected_source_rows(rows, manifest_rows, layer: str):
+    selected = {r['study_id'] for r in manifest_rows if r['layer'] == layer}
+    by_id = {r['study_id']:r for r in rows}
+    missing = selected - set(by_id)
+    if missing:
+        raise ValueError(f'double-review manifest contains missing {layer} study IDs: {sorted(missing)}')
+    return [by_id[sid] for sid in sorted(selected)]
+
+
 def build_stage1(raw_dir: Path, output_dir: Path, salt: str, fraction: float):
     """Build the frozen Stage-1 anatomy packet.
 
-    Keep this output schema stable: the pre-annotation Stage-1 packet has already
-    been frozen by SHA-256. Stage-2 extensions must not change Stage-1 contents.
+    Keep the primary review and manifest schemas stable: these two files were
+    already frozen by SHA-256 before annotation. Reviewer-2 packet generation is a
+    deterministic derivative of the frozen manifest and does not alter those files.
     """
     records = collect(raw_dir)
     rows = []
@@ -185,9 +199,31 @@ def build_stage1(raw_dir: Path, output_dir: Path, salt: str, fraction: float):
 
     fields = ['study_id','diagnosis_text','complaint_text','physical_exam_text','operation_name_text','operation_note_text','gold_anatomy_label','reviewer_confidence','reviewer_comment']
     write_csv(output_dir/'scaphoid_anatomy_review.csv',rows,fields)
+
     doubles = choose_double_review(rows,'anatomy',salt,fraction)
     write_csv(output_dir/'scaphoid_anatomy_double_review_manifest.csv',doubles,['study_id','layer','hash_score'])
-    return {'anatomy_primary':len(rows),'anatomy_double_review':len(doubles)}
+
+    reviewer2=[]
+    for row in selected_source_rows(rows,doubles,'anatomy'):
+        reviewer2.append({
+            'study_id':row['study_id'],
+            'diagnosis_text':row['diagnosis_text'],
+            'complaint_text':row['complaint_text'],
+            'physical_exam_text':row['physical_exam_text'],
+            'operation_name_text':row['operation_name_text'],
+            'operation_note_text':row['operation_note_text'],
+            'reviewer2_gold_anatomy_label':'',
+            'reviewer2_confidence':'',
+            'reviewer2_comment':'',
+        })
+    write_csv(output_dir/'scaphoid_anatomy_review_reviewer2.csv',reviewer2,
+              ['study_id','diagnosis_text','complaint_text','physical_exam_text','operation_name_text','operation_note_text','reviewer2_gold_anatomy_label','reviewer2_confidence','reviewer2_comment'])
+
+    return {
+        'anatomy_primary':len(rows),
+        'anatomy_double_review':len(doubles),
+        'anatomy_reviewer2_packet':len(reviewer2),
+    }
 
 
 def read_anatomy_gold(path: Path):
@@ -251,17 +287,56 @@ def build_stage2(raw_dir: Path, output_dir: Path, salt: str, anatomy_gold_path: 
                 'reviewer_comment':'',
             })
 
-    write_csv(output_dir/'scaphoid_state_review.csv',state_rows,
-              ['study_id','diagnosis_text','complaint_text','physical_exam_text','gold_scaphoid_state','gold_relevant_duration_present','gold_relevant_duration_value','gold_relevant_duration_unit','gold_duration_basis','reviewer_confidence','reviewer_comment'])
-    write_csv(output_dir/'scaphoid_procedure_review.csv',procedure_rows,
-              ['study_id','operation_name_text','operation_note_text','gold_target_disease_procedure_present','gold_internal_fixation','gold_bone_graft','gold_reconstruction','gold_fusion','reviewer_confidence','reviewer_comment'])
+    state_fields=['study_id','diagnosis_text','complaint_text','physical_exam_text','gold_scaphoid_state','gold_relevant_duration_present','gold_relevant_duration_value','gold_relevant_duration_unit','gold_duration_basis','reviewer_confidence','reviewer_comment']
+    procedure_fields=['study_id','operation_name_text','operation_note_text','gold_target_disease_procedure_present','gold_internal_fixation','gold_bone_graft','gold_reconstruction','gold_fusion','reviewer_confidence','reviewer_comment']
+    write_csv(output_dir/'scaphoid_state_review.csv',state_rows,state_fields)
+    write_csv(output_dir/'scaphoid_procedure_review.csv',procedure_rows,procedure_fields)
 
-    doubles = choose_double_review(state_rows,'state',salt,fraction) + choose_double_review(procedure_rows,'procedure',salt,fraction)
+    state_doubles = choose_double_review(state_rows,'state',salt,fraction)
+    procedure_doubles = choose_double_review(procedure_rows,'procedure',salt,fraction)
+    doubles = state_doubles + procedure_doubles
     write_csv(output_dir/'scaphoid_downstream_double_review_manifest.csv',doubles,['study_id','layer','hash_score'])
+
+    state_reviewer2=[]
+    for row in selected_source_rows(state_rows,doubles,'state'):
+        state_reviewer2.append({
+            'study_id':row['study_id'],
+            'diagnosis_text':row['diagnosis_text'],
+            'complaint_text':row['complaint_text'],
+            'physical_exam_text':row['physical_exam_text'],
+            'reviewer2_gold_scaphoid_state':'',
+            'reviewer2_gold_relevant_duration_present':'',
+            'reviewer2_gold_relevant_duration_value':'',
+            'reviewer2_gold_relevant_duration_unit':'',
+            'reviewer2_gold_duration_basis':'',
+            'reviewer2_confidence':'',
+            'reviewer2_comment':'',
+        })
+    write_csv(output_dir/'scaphoid_state_review_reviewer2.csv',state_reviewer2,
+              ['study_id','diagnosis_text','complaint_text','physical_exam_text','reviewer2_gold_scaphoid_state','reviewer2_gold_relevant_duration_present','reviewer2_gold_relevant_duration_value','reviewer2_gold_relevant_duration_unit','reviewer2_gold_duration_basis','reviewer2_confidence','reviewer2_comment'])
+
+    procedure_reviewer2=[]
+    for row in selected_source_rows(procedure_rows,doubles,'procedure'):
+        procedure_reviewer2.append({
+            'study_id':row['study_id'],
+            'operation_name_text':row['operation_name_text'],
+            'operation_note_text':row['operation_note_text'],
+            'reviewer2_gold_target_disease_procedure_present':'',
+            'reviewer2_gold_internal_fixation':'',
+            'reviewer2_gold_bone_graft':'',
+            'reviewer2_gold_reconstruction':'',
+            'reviewer2_gold_fusion':'',
+            'reviewer2_confidence':'',
+            'reviewer2_comment':'',
+        })
+    write_csv(output_dir/'scaphoid_procedure_review_reviewer2.csv',procedure_reviewer2,
+              ['study_id','operation_name_text','operation_note_text','reviewer2_gold_target_disease_procedure_present','reviewer2_gold_internal_fixation','reviewer2_gold_bone_graft','reviewer2_gold_reconstruction','reviewer2_gold_fusion','reviewer2_confidence','reviewer2_comment'])
+
     return {
         'physician_confirmed_wrist_scaphoid':len(state_rows),
         'wrist_with_detailed_note_module':len(procedure_rows),
-        'downstream_double_review':len(doubles),
+        'state_double_review':len(state_reviewer2),
+        'procedure_double_review':len(procedure_reviewer2),
         'duration_fields_added_to_state_review':4,
     }
 
