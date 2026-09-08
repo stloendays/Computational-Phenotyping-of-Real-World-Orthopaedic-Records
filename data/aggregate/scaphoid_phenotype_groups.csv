@@ -1,0 +1,3 @@
+phenotype_group,n,interpretation
+established_chronic_or_nonunion,24,Text-supported established chronic/nonunion phenotype; not necessarily incident nonunion observed longitudinally.
+other_wrist_scaphoid,48,Wrist-scaphoid cases without the preregistered chronic/nonunion terms in currently available text.
