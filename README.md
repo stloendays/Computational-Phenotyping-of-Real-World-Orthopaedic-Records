@@ -22,7 +22,7 @@ Current pre-validation values include:
 
 \*The 13 deterministic comparison records are **not** assumed to be acute. Final clinical inference uses only physician-confirmed `acute_or_new_fracture` records.
 
-The hypothesis is therefore narrower than “chronic cases receive more complex surgery.” The proposed signal is that a mechanical fixation base remains common while biological/reconstructive augmentation changes with presentation state.
+The hypothesis is narrower than “chronic cases receive more complex surgery.” The proposed signal is that a mechanical fixation base remains common while biological/reconstructive augmentation changes with presentation state.
 
 These values are provisional until physician adjudication.
 
@@ -114,11 +114,11 @@ The primary outcome cannot be replaced because another analysis yields a smaller
 
 ## Final post-Gold analysis
 
-After the physician reference standard is adjudicated and SHA-256 frozen, the clinical analysis is run by:
+After the physician reference standard is adjudicated and SHA-256 frozen, the current manuscript analysis entrypoint is:
 
-`src/ortho_pheno/scaphoid_post_gold_analysis_v0_2.py`
+`src/ortho_pheno/analyze_scaph_gold_v0_2.py`
 
-The script executes the prespecified analysis only:
+It executes the prespecified analysis only:
 
 1. physician-defined chronic/nonunion vs acute/new operative groups;
 2. primary bone-graft 2×2 table;
@@ -131,6 +131,10 @@ The script executes the prespecified analysis only:
 9. private exact manuscript JSON + privacy-suppressed public CSV.
 
 Uncertain procedure-component labels are excluded from the corresponding denominator rather than silently coded as negative.
+
+Final article-style figures are generated from the frozen Gold plus the private exact analysis by:
+
+`src/ortho_pheno/build_scaph_final_figures_v0_2.py`
 
 ## Current manuscript chain
 
@@ -146,9 +150,11 @@ Uncertain procedure-component labels are excluded from the corresponding denomin
 ## Validation and analysis code
 
 - `src/ortho_pheno/make_scaph_physician_packet_v0_1.py` — two-stage Reviewer-1/Reviewer-2 packet generator;
-- `src/ortho_pheno/adjudicate_scaph_reference_v0_1.py` — preserves independent labels and generates adjudicated Gold templates;
-- `src/ortho_pheno/freeze_scaph_reference_v0_1.py` — Stage-1/final vocabulary, ID and SHA-256 freeze checks;
-- `src/ortho_pheno/scaphoid_post_gold_analysis_v0_2.py` — final prespecified manuscript analysis;
+- `src/ortho_pheno/make_scaph_adjudication_templates_v0_1.py` — preserves independent labels and creates separate adjudicated Gold templates;
+- `src/ortho_pheno/freeze_scaph_reference_v0_2.py` — current Stage-1/final SHA-256 freeze entrypoint with analysis-plan v0.3 metadata;
+- `src/ortho_pheno/freeze_scaph_reference_v0_1.py` — tested underlying vocabulary/ID/hash validator;
+- `src/ortho_pheno/analyze_scaph_gold_v0_2.py` — current post-Gold manuscript analysis entrypoint;
+- `src/ortho_pheno/build_scaph_final_figures_v0_2.py` — current private final-figure entrypoint;
 - `src/ortho_pheno/scaphoid_duration_audit_v0_1.py` — pre-validation duration audit;
 - `src/ortho_pheno/duration_rules.py` — Chinese duration parser used only for engineering audit;
 - `src/ortho_pheno/rules.py` — deterministic anatomy/state audit rules;
