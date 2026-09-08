@@ -18,7 +18,7 @@ The current deterministic pre-validation analysis shows a specific treatment-com
 | Bone graft | 8/15 (53.3%) | `<5/13` |
 | Graft/reconstruction/fusion augmentation | 9/15 (60.0%) | `<5/13` |
 
-The hypothesis is therefore narrower than “chronic cases receive more complex surgery.” The proposed signal is that **the base fixation construct remains common while biological/reconstructive augmentation increases**.
+The hypothesis is narrower than “chronic cases receive more complex surgery.” The proposed signal is that **the base fixation construct remains common while biological/reconstructive augmentation increases**.
 
 These values are algorithm-derived and provisional until physician adjudication.
 
@@ -67,9 +67,9 @@ All **88 broad scaphoid candidates** are independently reviewed for:
 - other;
 - uncertain.
 
-The Stage-1 anatomy Gold is adjudicated and frozen first.
-
 The 88-row Stage-1 input and 18-row prespecified double-review selection were cryptographically frozen while every anatomy Gold field was blank.
+
+Reviewer-1 and Reviewer-2 labels are preserved. A separate adjudication file is generated: agreement cases inherit the agreed label, non-double-reviewed cases inherit Reviewer-1, and disagreements remain blank until explicit adjudication. The adjudicated Stage-1 anatomy Gold is frozen before any downstream cohort is generated.
 
 ### Stage 2 — generated from physician anatomy
 
@@ -80,7 +80,7 @@ Only after Stage 1 is frozen does `make_scaph_physician_packet_v0_1.py downstrea
 - procedure relevance/components for physician-confirmed wrist records with detailed operative documentation;
 - independent Reviewer-2 subset packets containing no Reviewer-1 labels.
 
-Therefore the final state/procedure sample sizes are **not assumed in advance** to equal the deterministic 68 and 31. This design avoids verification bias from allowing the rule system to predefine the clinical study population.
+Reviewer-1, Reviewer-2, and final adjudicated State/Procedure Gold remain separate. Therefore the final state/procedure sample sizes are **not assumed in advance** to equal the deterministic 68 and 31.
 
 ## Comparison-group caution
 
@@ -117,7 +117,7 @@ The primary outcome is not replaced by a composite or the duration analysis simp
 ## Main manuscript files
 
 - `docs/SCAPHOID_SCIENTIFIC_QUESTION_V0_1.md` — primary scientific question and claim boundaries;
-- `docs/SCAPHOID_ANALYSIS_PLAN_V0_3.md` — current two-stage statistical analysis plan including the duration secondary hypothesis;
+- `docs/SCAPHOID_ANALYSIS_PLAN_V0_2.md` — current two-stage statistical analysis plan including the duration secondary hypothesis;
 - `docs/SCAPHOID_DURATION_SECONDARY_HYPOTHESIS_V0_1.md` — frozen duration hypothesis and analysis boundary;
 - `docs/DATA_DRIVEN_QUESTION_SELECTION_V0_1.md` — why this question was selected over other signals in the fixed dataset;
 - `docs/SCAPHOID_PHYSICIAN_REVIEW_GUIDE_ZH.md` — current Chinese physician review instructions;
@@ -131,8 +131,9 @@ The primary outcome is not replaced by a composite or the duration analysis simp
 - `src/ortho_pheno/scaphoid_comparison_state_audit_v0_1.py` — comparison-state evidence audit;
 - `src/ortho_pheno/scaphoid_duration_audit_v0_1.py` — secondary duration audit;
 - `src/ortho_pheno/duration_rules.py` — dependency-free Chinese duration parser with regression tests;
-- `src/ortho_pheno/make_scaph_physician_packet_v0_1.py` — local-only two-stage primary/Reviewer-2 packet generator;
-- `src/ortho_pheno/freeze_scaph_reference_v0_1.py` — controlled-vocabulary validation and final SHA-256 reference-standard freeze;
+- `src/ortho_pheno/make_scaph_physician_packet_v0_1.py` — local-only two-stage Reviewer-1/Reviewer-2 packet generator;
+- `src/ortho_pheno/make_scaph_adjudication_templates_v0_1.py` — preserves Reviewer-1/Reviewer-2 labels and creates separate final Gold templates;
+- `src/ortho_pheno/freeze_scaph_reference_v0_1.py` — Stage-1/final controlled-vocabulary validation and SHA-256 freeze;
 - `src/ortho_pheno/rules.py` — deterministic anatomy/state measurement rules;
 - `src/ortho_pheno/procedure_rules.py` — procedure-relevance and component rules.
 
@@ -161,6 +162,6 @@ The fixed archive also contains hallux-valgus and first-CMC OA records. Those an
 
 ## Privacy
 
-The source archive contains direct identifiers and protected clinical text. **No raw patient data, pseudonymized row-level data, admission identifiers, patient-level dates, clinical free text, Reviewer-1/Reviewer-2 packets, or pseudonym salts are committed to this public repository.**
+The source archive contains direct identifiers and protected clinical text. **No raw patient data, pseudonymized row-level data, admission identifiers, patient-level dates, clinical free text, Reviewer-1/Reviewer-2 packets, adjudication files, or pseudonym salts are committed to this public repository.**
 
 Public artifacts use small-cell suppression (`<5`) when necessary to prevent reverse engineering of patient-level counts.
