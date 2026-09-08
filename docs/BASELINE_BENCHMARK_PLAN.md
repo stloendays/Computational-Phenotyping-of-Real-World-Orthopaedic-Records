@@ -8,16 +8,16 @@ Benchmark the current deterministic extraction system against the physician refe
 
 The order is fixed to prevent post-hoc baseline weakening:
 
-1. phenotype v0.3 deterministic rules;
+1. phenotype-v0.3 deterministic rules;
 2. terminology/dictionary augmentation, if implemented as a distinct prespecified system;
 3. LLM-assisted structured extraction;
 4. hybrid extraction.
 
 All systems are evaluated on identical locked gold-standard labels.
 
-## Tasks
+`src/ortho_pheno/generate_rule_predictions.py` generates the deterministic baseline predictions locally. It removes all `gold_*` columns before applying extraction rules, creating a code-level barrier against accidental reference-label leakage.
 
-### Disease/anatomy classification
+## Task 1: Disease/anatomy classification
 
 - hallux-valgus status;
 - scaphoid anatomy: wrist scaphoid / foot navicular / other / uncertain;
@@ -31,9 +31,9 @@ Metrics:
 - Cohen's kappa where appropriate;
 - confusion matrix.
 
-### Scaphoid clinical state
+## Task 2: Scaphoid clinical state
 
-Multi-class state:
+Gold multi-class state:
 
 - acute/new;
 - established chronic;
@@ -41,24 +41,76 @@ Multi-class state:
 - chronic/nonunion not distinguishable;
 - insufficient/uncertain.
 
-Secondary collapsed binary phenotype:
+The deterministic v0.3 rule system is primarily benchmarked on the prespecified binary collapse:
 
 - established chronic/nonunion;
-- not established chronic/nonunion.
+- other/not established chronic/nonunion.
+
+Operative text is prohibited from this task.
 
 Metrics:
 
-- multi-class accuracy and macro-F1;
-- binary sensitivity, specificity, PPV, NPV and F1;
+- multi-class metrics for systems that output the full state taxonomy;
+- binary sensitivity, specificity, PPV, NPV and F1 for the frozen collapsed task;
 - source-scope violation count.
 
-### Procedure extraction
+## Task 3: Target-disease procedure attribution
 
-Multi-label tasks by disease:
+Every strict-cohort admission with a detailed operative-note module is retained, including operations unrelated to the study disease.
 
-- hallux valgus: osteotomy, Chevron, Akin, Scarf, fusion, K-wire, resection, soft-tissue procedure;
-- scaphoid: internal fixation, bone graft, reconstruction, fusion, hardware removal, debridement;
-- first-CMC OA: trapeziectomy, tendon procedure, ligament procedure, arthroplasty, fusion.
+Gold label:
+
+`target_disease_procedure_present = yes / no / uncertain`
+
+Current module-available workloads:
+
+- hallux valgus: 114;
+- wrist scaphoid: 31;
+- first-CMC OA: 18.
+
+Current deterministic disease-concordant counts (not shown to reviewers) are 113, 28 and 18, respectively.
+
+Metrics:
+
+- accuracy;
+- precision/recall/F1 for target-disease procedure present;
+- specificity against unrelated-operation hard negatives;
+- Cohen's kappa;
+- confusion matrix.
+
+This task directly measures cross-anatomy procedure-attribution leakage.
+
+## Task 4: Procedure-component extraction
+
+For physician-adjudicated target-disease procedure records, evaluate multi-label components.
+
+### Hallux valgus
+
+- osteotomy;
+- Chevron;
+- Akin;
+- Scarf;
+- fusion/arthrodesis;
+- K-wire/steel-wire fixation;
+- resection;
+- soft-tissue procedure.
+
+### Scaphoid
+
+- internal fixation;
+- bone graft;
+- reconstruction;
+- fusion/arthrodesis;
+- hardware removal;
+- debridement.
+
+### First-CMC OA
+
+- trapeziectomy;
+- tendon procedure;
+- ligament procedure;
+- arthroplasty;
+- fusion/arthrodesis.
 
 Metrics:
 
@@ -68,6 +120,15 @@ Metrics:
 - exact-set match;
 - mean absolute label-cardinality error.
 
+## Task 5: End-to-end procedure phenotype
+
+A system receives credit only when it both:
+
+1. correctly identifies whether the note documents a target-disease operation; and
+2. recovers the target-disease procedure components.
+
+This end-to-end result is reported alongside the conditional component-extraction metrics so that a system cannot appear superior by performing well only after an oracle relevance filter.
+
 ## Error analysis
 
 Each discordance is assigned one prespecified error type:
@@ -75,6 +136,7 @@ Each discordance is assigned one prespecified error type:
 - anatomical confusion;
 - negation failure;
 - temporal/state confusion;
+- procedure-attribution error;
 - broad-term overcalling;
 - synonym/variant miss;
 - procedure-component omission;
@@ -84,16 +146,18 @@ Each discordance is assigned one prespecified error type:
 
 ## Statistical uncertainty
 
-Confidence intervals should be estimated at the admission-episode level, preferably by bootstrap when sample size and class frequency permit. Extremely sparse labels are reported descriptively and are not used to make comparative superiority claims.
+Confidence intervals should be estimated at the admission-episode level, preferably by bootstrap when sample size and class frequency permit. Extremely sparse labels are reported descriptively and are not used to make comparative-superiority claims.
 
 ## Decision rule for adding an LLM claim
 
 A claim that semantic/LLM extraction improves the deterministic baseline requires all of the following:
 
 - the physician reference standard was frozen before LLM scoring;
+- baseline predictions were generated without access to `gold_*` fields;
 - both systems were evaluated on identical records;
+- procedure relevance and procedure components were both evaluated;
 - improvement is shown on prespecified metrics rather than a selectively chosen label;
-- error analysis demonstrates that gains are clinically plausible rather than due to leakage or relaxed specificity;
+- error analysis demonstrates clinically plausible gains rather than relaxed specificity or attribution leakage;
 - uncertainty intervals and rare-label limitations are reported.
 
 If these conditions are not met, the LLM component remains an exploratory engineering demonstration rather than a validated scientific contribution.
