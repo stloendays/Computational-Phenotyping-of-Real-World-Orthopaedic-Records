@@ -15,6 +15,11 @@ def write_rows(path, fields, rows):
         w.writeheader(); w.writerows(rows)
 
 
+def read_rows(path):
+    with path.open(encoding='utf-8-sig', newline='') as f:
+        return list(csv.DictReader(f))
+
+
 class ScaphoidReferenceFreezeTests(unittest.TestCase):
     def make_valid(self, root):
         anatomy_fields = ['study_id','gold_anatomy_label']
@@ -74,7 +79,7 @@ class ScaphoidReferenceFreezeTests(unittest.TestCase):
             root = Path(td)
             self.make_valid(root)
             p = root/'scaphoid_state_review.csv'
-            rows = list(csv.DictReader(p.open(encoding='utf-8-sig')))
+            rows = read_rows(p)
             rows[0]['gold_relevant_duration_value'] = ''
             write_rows(p, rows[0].keys(), rows)
             with self.assertRaises(ValueError):
@@ -85,7 +90,7 @@ class ScaphoidReferenceFreezeTests(unittest.TestCase):
             root = Path(td)
             self.make_valid(root)
             p = root/'scaphoid_state_review.csv'
-            rows = list(csv.DictReader(p.open(encoding='utf-8-sig')))
+            rows = read_rows(p)
             rows[0]['gold_relevant_duration_present'] = 'no'
             rows[0]['gold_relevant_duration_value'] = '10'
             rows[0]['gold_relevant_duration_unit'] = 'days'
@@ -99,8 +104,9 @@ class ScaphoidReferenceFreezeTests(unittest.TestCase):
             root = Path(td)
             self.make_valid(root)
             p = root/'scaphoid_procedure_review.csv'
-            rows = list(csv.DictReader(p.open(encoding='utf-8-sig')))
+            rows = read_rows(p)
             rows[0]['gold_target_disease_procedure_present'] = 'no'
+            write_rows(p, rows[0].keys(), rows)
             with self.assertRaises(ValueError):
                 build_manifest(root)
 
