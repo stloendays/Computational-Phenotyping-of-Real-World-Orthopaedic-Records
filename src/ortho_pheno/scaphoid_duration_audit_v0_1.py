@@ -16,59 +16,15 @@ from pathlib import Path
 import argparse
 import csv
 import math
-import re
 import statistics
 import sys
 
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from build_safe_release import read_xlsx, norm_id
+from duration_rules import extract_duration_days
 from scaphoid_augmentation_analysis_v0_1 import collect
 
 COMPLAINT_FILE = '2015-2025舟骨骨折患者主诉和专科查体.xlsx'
-
-CN = {'一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10}
-NUM = r'(?:\d+(?:\.\d+)?|[一二三四五六七八九十两]+)'
-
-# Order matters: half-unit expressions must be consumed before generic units.
-DURATION_PATTERNS = (
-    (re.compile(fr'({NUM})\s*年半'),lambda v:(v+0.5)*365.25),
-    (re.compile(fr'({NUM})\s*个?半月'),lambda v:(v+0.5)*30.44),
-    (re.compile(r'半年'),lambda v:0.5*365.25),
-    (re.compile(fr'({NUM})\s*年'),lambda v:v*365.25),
-    (re.compile(fr'({NUM})\s*个?月'),lambda v:v*30.44),
-    (re.compile(fr'({NUM})\s*(?:周|星期)'),lambda v:v*7),
-    (re.compile(fr'({NUM})\s*(?:天|日)'),lambda v:v),
-    (re.compile(fr'({NUM})\s*小时'),lambda v:v/24),
-)
-
-
-def cn_number(text: str):
-    try:
-        return float(text)
-    except Exception:
-        pass
-    if '十' in text:
-        left,right = text.split('十',1)
-        tens = CN.get(left,1) if left else 1
-        ones = CN.get(right,0) if right else 0
-        return 10*tens + ones
-    return CN.get(text)
-
-
-def extract_duration_days(text: str):
-    values=[]
-    occupied=[]
-    for pattern,convert in DURATION_PATTERNS:
-        for match in pattern.finditer(text or ''):
-            if any(not (match.end() <= a or match.start() >= b) for a,b in occupied):
-                continue
-            raw = match.group(1) if match.lastindex else None
-            value = 0.5 if raw is None else cn_number(raw)
-            if value is None:
-                continue
-            values.append(float(convert(value)))
-            occupied.append((match.start(),match.end()))
-    return values
 
 
 def qtile(values,p):
