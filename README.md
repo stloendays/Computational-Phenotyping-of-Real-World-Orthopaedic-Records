@@ -12,6 +12,7 @@ Completed:
 - admission-level reconstruction and deduplication;
 - phenotype rule audit through **v0.3**;
 - cohort audit v0.2;
+- explicit scaphoid rule-version transition audit;
 - calendar-era sensitivity analysis;
 - exploratory scaphoid and hallux treatment-pattern analyses;
 - synthetic regression tests and CI;
@@ -36,6 +37,12 @@ The 88 scaphoid candidates are explicitly separated into:
 - **7 ambiguous episodes (8.0%)** reserved for physician adjudication.
 
 The earlier 72-case wrist-scaphoid count is **superseded**. Audit of discordant cases showed that the previous rule could treat non-anatomical Chinese words such as `手术` (operation) or `手法` (manual manoeuvre) as "hand" context. v0.3 replaces this shortcut with source-aware local anatomical evidence and an explicit ambiguous state.
+
+The rule-transition audit shows that:
+
+- 68/72 previously selected episodes remain wrist scaphoid under v0.3;
+- the four removed episodes are all explicitly classified as foot navicular;
+- no new wrist-scaphoid episodes were added relative to the superseded heuristic.
 
 Within the 68 high-specificity wrist-scaphoid episodes:
 
@@ -123,6 +130,7 @@ Private annotation packets, pseudonymous study IDs and clinical text remain in `
 
 - `data/aggregate/cohort_overview.csv`;
 - `data/aggregate/scaphoid_anatomy_audit.csv`;
+- `data/aggregate/scaphoid_rule_version_transition.csv`;
 - `data/aggregate/source_duplication_audit.csv`;
 - `data/aggregate/era_module_coverage.csv`;
 - `data/aggregate/scaphoid_comparative_table.csv`;
@@ -135,7 +143,9 @@ Private annotation packets, pseudonymous study IDs and clinical text remain in `
 ### Code and tests
 
 - `src/ortho_pheno/build_safe_release.py` - privacy-preserving aggregate builder;
-- `src/ortho_pheno/analysis_v0_1.py` - aggregate cohort analysis;
+- `src/ortho_pheno/analysis_v0_2.py` - current phenotype-v0.3 aggregate-analysis entrypoint;
+- `src/ortho_pheno/analysis_v0_1.py` - historical analysis implementation retained for auditability;
+- `src/ortho_pheno/scaphoid_anatomy_audit.py` - independent 68/13/7 anatomy-audit generator;
 - `src/ortho_pheno/rules.py` - deterministic phenotype rules;
 - `src/ortho_pheno/legacy_xls.py` - legacy binary Excel parser;
 - `src/ortho_pheno/make_annotation_packet.py` - local-only annotation packet generator;
