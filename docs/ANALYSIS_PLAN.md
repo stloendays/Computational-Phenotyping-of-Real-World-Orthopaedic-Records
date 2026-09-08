@@ -31,14 +31,39 @@ No manuscript-level effect estimate is generated before this audit is frozen.
 ### Key quality indicators
 
 - duplicate-row inflation factor = raw rows / unique episodes;
-- strict phenotype precision on a manually reviewed sample;
+- strict phenotype precision against physician adjudication;
 - unresolved ambiguity rate.
 
-## 4. Aim 2: NLP phenotype validation
+### Scaphoid anatomy gate
+
+Under phenotype **v0.3**, every scaphoid candidate is first assigned to one of three deterministic anatomy states:
+
+- `wrist_scaphoid`;
+- `foot_navicular`;
+- `ambiguous`.
+
+Only deterministic `wrist_scaphoid` episodes enter the primary pre-validation clinical comparison. `ambiguous` episodes are retained for physician adjudication and are not forced into either group.
+
+The frozen v0.3 candidate audit is:
+
+- 68 wrist-scaphoid;
+- 13 foot-navicular;
+- 7 ambiguous;
+- 88 candidates total.
+
+The standalone Chinese character `手` cannot establish hand anatomy because common words such as `手术` and `手法` otherwise produce false positives. Explicit local anatomical relations are required.
+
+## 4. Aim 2: Physician reference standard and NLP phenotype validation
 
 ### Evaluation design
 
-A physician-reviewed evaluation subset is frozen before method comparison. The same evaluation set is used for all extraction systems.
+The fixed dataset is sufficiently modest to support broad physician adjudication rather than convenience sampling. The current plan reviews:
+
+- all 367 disease/anatomy candidate episodes;
+- all 68 deterministic strict wrist-scaphoid episodes for clinical state;
+- all 163 detailed operative notes in the current strict cohorts for multi-label procedure phenotypes.
+
+An approximately 20% deterministic stratified subset is independently reviewed by a second clinician. The reference standard is frozen before method comparison, and the same labels are used for every extraction system.
 
 ### Systems
 
@@ -49,22 +74,24 @@ A physician-reviewed evaluation subset is frozen before method comparison. The s
 
 ### Metrics
 
-For binary phenotypes:
+For binary/categorical phenotypes:
 
 - precision;
 - recall;
 - F1;
 - specificity where meaningful;
-- exact agreement.
+- exact agreement;
+- confusion matrix.
 
 For multi-label procedure extraction:
 
-- per-label F1;
+- per-label precision, recall and F1;
 - macro-F1;
 - micro-F1;
-- exact-set match.
+- exact-set match;
+- label-cardinality error.
 
-Confidence intervals should be estimated by patient-level bootstrap when sample size permits.
+Inter-rater reliability is reported on the independently double-reviewed subset. Confidence intervals should be estimated by admission-level bootstrap when sample size permits.
 
 ### Error taxonomy
 
@@ -72,20 +99,26 @@ Errors are categorized as:
 
 - anatomical confusion;
 - negation failure;
-- temporal confusion;
+- temporal/state confusion;
 - procedure-component omission;
 - overcalling from broad terminology;
 - abbreviation/variant failure;
-- unsupported semantic inference.
+- unsupported semantic inference;
+- source-scope violation;
+- documentation insufficiency.
 
 ## 5. Aim 3: Scaphoid comparison
 
 ### Primary grouping
 
-- established chronic/nonunion phenotype;
-- other strict wrist-scaphoid phenotype.
+Within the v0.3 high-specificity wrist-scaphoid cohort:
 
-Under phenotype definition **v0.2**, established chronic/nonunion status is assigned only from non-operative clinical sources: diagnosis, complaint and physical-examination text. Operative names and operative-note contents are explicitly excluded from case assignment because treatment variables are downstream comparison outcomes. This prevents circular case definition and leakage.
+- established chronic/nonunion phenotype: 23;
+- other wrist-scaphoid phenotype: 45.
+
+The comparison group is not uniformly described as acute because the fixed records do not establish acute status for every non-chronic episode.
+
+Established chronic/nonunion status is assigned only from non-operative clinical sources: diagnosis, complaint and physical-examination text. Operative names and operative-note contents are explicitly excluded from case assignment because treatment variables are downstream comparison outcomes. This prevents circular case definition and leakage.
 
 ### Primary clinical comparison
 
@@ -158,14 +191,15 @@ Because documentation completeness differs across periods, repeat key descriptiv
 2. years with complete operative-note capture;
 3. the most internally consistent documentation era.
 
-The cohort audit identified **2023-2025** as the current internally consistent era for the scaphoid treatment-comparison sensitivity analysis. In the supplied exports, 2019-2022 retains complaint/examination records but lacks the operative-note, imaging-exam and laboratory modules for hallux valgus and scaphoid cohorts.
+The cohort audit identifies **2023-2025** as the internally consistent era for the current scaphoid treatment-comparison sensitivity analysis. Under v0.3 this era contains 18 established chronic/nonunion and 14 comparison episodes.
 
-The purpose is to test robustness to source-system changes, not to optimize significance.
+In the supplied exports, 2019-2022 retains complaint/examination records but lacks the operative-note, imaging-exam and laboratory modules for hallux-valgus and scaphoid cohorts. The purpose of restriction is to test robustness to the source-system shift, not to optimize statistical significance.
 
-## 9. Missing-data strategy
+## 9. Missing-data and uncertainty strategy
 
 - report availability for every key variable;
 - do not code undocumented free-text phenotypes as negative;
+- preserve an explicit `uncertain` state where anatomy or clinical state cannot be supported;
 - avoid multiple imputation for sparse text-derived variables unless assumptions are defensible;
 - complete-case regression is allowed only with explicit denominator reporting and sensitivity analysis.
 
@@ -181,11 +215,11 @@ Exploratory P values are interpreted descriptively. False-discovery-rate adjustm
 
 ## 11. Machine learning boundary
 
-High-capacity ML is not a primary objective. Any exploratory ML model must use patient-level separation and nested tuning where applicable.
+High-capacity ML is not a primary objective. Any exploratory ML model must use admission/patient-level separation and nested tuning where applicable.
 
 Performance claims require:
 
-- no leakage between train/test patients;
+- no leakage between train/test episodes from the same patient where patient identity can be resolved;
 - confidence intervals;
 - calibration assessment if probabilistic prediction is reported;
 - comparison with a simple baseline.
@@ -212,4 +246,4 @@ Every result table or figure should be generated from:
 - an aggregate output file;
 - a recorded random seed when stochastic procedures are used.
 
-No manual Excel-derived manuscript numbers should remain untraceable to code.
+No manual Excel-derived manuscript numbers should remain untraceable to code. Rule changes are documented in `docs/PHENOTYPE_CHANGELOG.md` before regenerated results are treated as current.
