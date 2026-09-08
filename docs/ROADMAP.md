@@ -1,148 +1,211 @@
 # Research Roadmap
 
+## Current gate
+
+**Current human-validation gate:** physician reference-standard annotation v0.1 (GitHub Issue #2).
+
+The deterministic pipeline, cohort audits, privacy-preserving aggregate release, synthetic regression tests, annotation-packet generator, deterministic prediction exporter and evaluation harness are implemented. No LLM-assisted extraction claim is promoted to manuscript evidence until the physician reference standard is frozen.
+
 ## Phase 0 - Freeze scope
 
-Status: in progress
+**Status: complete through phenotype v0.3**
 
 - [x] Fix study to currently available local data only.
 - [x] Define disease roles.
-- [x] Draft strict phenotype definitions.
 - [x] Prespecify inference boundaries.
 - [x] Add repository-level PHI safeguards.
-- [ ] Freeze v0.1 after first deterministic audit.
+- [x] Freeze versioned phenotype definitions.
+- [x] Preserve v0.1/v0.2 rule history rather than silently overwriting it.
+- [x] Freeze v0.3 explicit scaphoid anatomy uncertainty after cross-pipeline audit.
+
+Current deterministic scaphoid anatomy audit: 68 wrist scaphoid / 13 foot navicular / 7 ambiguous from 88 candidates.
 
 ## Phase 1 - Cohort reconstruction
 
-Goal: convert heterogeneous source exports to one auditable episode-level dataset.
+**Status: complete for current fixed-data audit**
 
-Deliverables:
+Goal: convert heterogeneous source exports to one auditable admission-episode dataset.
 
-- patient/admission deduplication script;
-- source-table inventory;
-- calendar-period completeness audit;
-- strict disease classification;
-- anatomical ambiguity report;
-- aggregate cohort flow table.
+Completed deliverables:
 
-Acceptance criteria:
+- [x] admission-level deduplication;
+- [x] complete 18-file source-table inventory;
+- [x] calendar-period completeness audit;
+- [x] strict disease classification;
+- [x] explicit scaphoid anatomy ambiguity report;
+- [x] aggregate cohort flow/coverage outputs;
+- [x] small-cell-suppressed public release.
 
-- no raw row counted as an independent patient episode;
-- every strict inclusion/exclusion decision has a versioned rule;
-- unresolved cases remain explicit rather than silently forced into a class.
+Acceptance criteria met:
+
+- no raw diagnosis row is treated as an independent episode;
+- every current strict inclusion/exclusion decision has a versioned rule;
+- unresolved scaphoid anatomy remains `ambiguous` rather than being forced into a class.
 
 ## Phase 2 - Deterministic phenotype baseline
 
+**Status: complete for pre-annotation baseline implementation**
+
 Goal: establish a transparent baseline before any LLM-assisted extraction.
 
-Deliverables:
+Completed deliverables:
 
-- regex/dictionary extractor;
-- procedure multi-label extractor;
-- scaphoid anatomy/chronicity classifier;
-- first-CMC strict classifier;
-- synthetic unit tests.
+- [x] deterministic disease/anatomy rules;
+- [x] procedure multi-label rules;
+- [x] scaphoid chronic/nonunion source-scope rule;
+- [x] first-CMC strict classifier;
+- [x] local-only deterministic prediction exporter;
+- [x] synthetic anatomy/leakage/procedure regression tests;
+- [x] GitHub Actions CI.
+
+The baseline is evaluated against physicians only after the gold standard is frozen; its apparent agreement with its own construction rules is not treated as validation.
+
+## Phase 3 - Physician reference standard
+
+**Status: current milestone / human review required**
+
+Goal: create a fixed gold standard from the existing records without acquiring new clinical data.
+
+Frozen workload:
+
+- disease/anatomy: 367 candidate episodes;
+- scaphoid state: 68 strict wrist-scaphoid episodes;
+- procedures: 163 detailed operative notes;
+- approximately 20% deterministic stratified independent second review.
+
+Completed infrastructure:
+
+- [x] annotation guideline;
+- [x] annotation schema;
+- [x] local-only packet generator;
+- [x] deterministic second-review manifest generation;
+- [x] evaluation harness for categorical and multi-label metrics;
+- [x] validation gate and deterministic-first benchmark plan.
+
+Remaining human tasks:
+
+- [ ] primary physician annotation;
+- [ ] independent second review;
+- [ ] adjudication of disagreements;
+- [ ] freeze local gold-standard version/hash;
+- [ ] calculate inter-rater reliability.
 
 Acceptance criteria:
 
-- all rules pass synthetic positive, negative, negation and ambiguity tests;
-- rule failures are documented in an error taxonomy.
-
-## Phase 3 - Physician-reviewed evaluation set
-
-Goal: create a fixed gold-standard subset from the existing records.
-
-Deliverables:
-
-- annotation guideline;
-- blinded/frozen evaluation IDs stored outside public GitHub;
-- adjudication protocol;
-- inter-rater agreement where two reviewers are available.
-
-Acceptance criteria:
-
-- evaluation labels frozen before comparing semantic/LLM systems;
-- no test-set examples used for prompt/rule tuning.
+- evaluation labels frozen before model scoring;
+- reviewers blinded to rule/model predictions during primary annotation;
+- no gold label changed merely because a model disagrees.
 
 ## Phase 4 - Semantic/LLM phenotyping
 
+**Status: blocked by Phase 3 by design**
+
 Goal: test whether semantic extraction adds measurable value beyond deterministic rules.
 
-Systems:
+Locked evaluation order:
 
-- regex baseline;
-- terminology baseline;
-- LLM structured extraction;
-- hybrid pipeline.
+1. phenotype v0.3 deterministic baseline;
+2. terminology/dictionary baseline if implemented;
+3. LLM structured extraction;
+4. hybrid pipeline.
 
 Primary outputs:
 
 - precision/recall/F1;
-- macro/micro-F1 for procedures;
-- error categories;
-- confidence intervals.
+- accuracy and Cohen's kappa for categorical phenotypes;
+- macro/micro-F1 and exact-set match for procedures;
+- prespecified error taxonomy;
+- uncertainty intervals where supported.
 
 Go/no-go rule:
 
-If semantic methods do not materially improve clinically important phenotype recovery, retain the simpler auditable baseline.
+If semantic methods do not materially improve clinically important phenotype recovery without unacceptable specificity loss, retain the simpler auditable baseline.
 
 ## Phase 5 - Scaphoid clinical analysis
 
-Goal: compare established chronic/nonunion and acute/other wrist-scaphoid phenotypes.
+**Status: exploratory aggregate analysis complete; confirmatory interpretation pending phenotype validation**
 
-Primary outputs:
+Current primary deterministic comparison:
 
-- cohort characteristics;
-- treatment-component frequencies;
-- treatment-complexity comparison;
-- effect sizes and 95% CIs;
-- parsimonious Firth/logistic model only if supported by sample size;
-- strict/broad and calendar-period sensitivity analyses.
+- 23 established chronic/nonunion episodes;
+- 45 other high-specificity wrist-scaphoid episodes.
+
+2023-2025 sensitivity cohort:
+
+- 18 established chronic/nonunion;
+- 14 comparison episodes.
+
+Completed outputs:
+
+- [x] cohort characteristics;
+- [x] treatment-component frequencies;
+- [x] all-year documentation-bias audit;
+- [x] 2023-2025 consistent-era sensitivity analysis;
+- [x] public small-cell suppression.
+
+Remaining after validation:
+
+- [ ] regenerate comparison using physician-adjudicated phenotypes;
+- [ ] assess whether adjusted/Firth modelling is supportable after final event counts;
+- [ ] freeze manuscript-level effect estimates.
 
 Interpretation boundary:
 
-Do not describe the model as predicting incident nonunion unless progression is explicitly established within existing longitudinal records.
+Do not describe the analysis as predicting incident nonunion unless progression is explicitly established within existing longitudinal records.
 
 ## Phase 6 - Hallux valgus treatment-pattern analysis
 
-Goal: characterize real-world operative heterogeneity from free-text surgery records.
+**Status: exploratory aggregate analysis complete; procedure-label validation pending**
 
-Primary outputs:
+Completed outputs:
 
-- procedure label prevalence;
-- co-occurrence network/matrix;
-- dominant procedure combinations;
-- exploratory association with available baseline phenotypes.
+- [x] procedure prevalence;
+- [x] pairwise procedure co-occurrence;
+- [x] common multi-label procedure combinations;
+- [x] exploratory Chevron/fusion contrasts using available baseline phenotypes.
+
+Current hypothesis-generating signal:
+
+A bilateral-disease mention is more frequent in Chevron-positive than Chevron-negative detailed operative episodes. This result remains exploratory until bilateral and Chevron labels are physician-validated.
 
 No recurrence or long-term efficacy claim is planned.
 
-## Phase 7 - First CMC cross-disease validation
+## Phase 7 - First-CMC cross-disease validation
 
-Goal: quantify the failure of broad keyword retrieval and test strict anatomical phenotyping.
+**Status: deterministic audit complete; physician validation pending**
 
-Primary outputs:
+Completed outputs:
 
-- broad vs strict cohort counts;
-- competing-diagnosis taxonomy;
-- strict classification performance;
-- transfer performance of the common phenotype architecture.
+- [x] broad vs strict cohort counts;
+- [x] competing-diagnosis audit;
+- [x] strict anatomical rule implementation.
+
+Remaining:
+
+- [ ] physician precision/recall benchmark;
+- [ ] compare deterministic vs semantic extraction specificity;
+- [ ] quantify error categories in broad-term overcalling.
 
 ## Phase 8 - Manuscript validation package
 
+**Status: scaffolded, not yet frozen**
+
 Before manuscript claims are frozen:
 
-- reproduce all tables/figures from scripts;
-- repeat strict/broad sensitivity analyses;
-- perform leakage audit;
-- verify denominators manually against aggregate cohort audit;
-- freeze configs and hashes;
-- generate a claim-to-evidence table.
+- [ ] reproduce all final tables/figures from scripts;
+- [ ] rerun strict/broad sensitivity analyses on physician-adjudicated labels;
+- [ ] complete leakage/source-scope audit;
+- [ ] verify all denominators against the versioned cohort audit;
+- [ ] freeze configs, model identifiers and hashes;
+- [ ] generate final claim-to-evidence matrix;
+- [ ] classify each claim as validated, exploratory, negative or unsupported.
 
 ## Candidate manuscript structure
 
 1. Introduction: real-world EHR heterogeneity as a barrier to orthopaedic phenotyping.
-2. Methods: fixed-data cohort reconstruction, phenotype definitions, NLP validation and clinical analyses.
-3. Results I: cohort reconstruction and diagnostic disambiguation.
-4. Results II: NLP/procedure extraction validation.
-5. Results III: scaphoid phenotype and treatment-complexity analysis.
-6. Results IV: hallux-valgus procedural heterogeneity and CMC cross-disease validation.
-7. Discussion: auditable computational phenotyping, generalizability, documentation bias and inference limits.
+2. Methods: fixed-data cohort reconstruction, explicit anatomy uncertainty, physician reference standard, NLP validation and clinical analyses.
+3. Results I: row inflation, source-system shift and anatomical/diagnostic disambiguation.
+4. Results II: physician agreement and deterministic/semantic extraction validation.
+5. Results III: scaphoid established-phenotype and treatment-complexity analysis.
+6. Results IV: hallux-valgus procedural heterogeneity and first-CMC hard-negative validation.
+7. Discussion: auditable computational phenotyping, Chinese lexical ambiguity, documentation-process bias, generalizability and inference limits.
