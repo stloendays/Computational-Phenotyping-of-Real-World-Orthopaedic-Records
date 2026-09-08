@@ -1,0 +1,15 @@
+phenotype_group,procedure_phenotype,n,denominator_disease_concordant_notes,percent
+established_chronic_or_nonunion,internal_fixation,14,15,93.3%
+established_chronic_or_nonunion,bone_graft,8,15,53.3%
+established_chronic_or_nonunion,reconstruction,0,15,0.0%
+established_chronic_or_nonunion,fusion,<5,15,<5
+established_chronic_or_nonunion,hardware_removal,0,15,0.0%
+established_chronic_or_nonunion,debridement,0,15,0.0%
+established_chronic_or_nonunion,complex_reconstruction_marker,9,15,60.0%
+other_wrist_scaphoid,internal_fixation,12,13,92.3%
+other_wrist_scaphoid,bone_graft,<5,13,<5
+other_wrist_scaphoid,reconstruction,<5,13,<5
+other_wrist_scaphoid,fusion,0,13,0.0%
+other_wrist_scaphoid,hardware_removal,<5,13,<5
+other_wrist_scaphoid,debridement,<5,13,<5
+other_wrist_scaphoid,complex_reconstruction_marker,<5,13,<5
