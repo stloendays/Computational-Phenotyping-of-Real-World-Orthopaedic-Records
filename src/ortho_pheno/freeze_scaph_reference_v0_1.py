@@ -4,6 +4,10 @@
 The main paper uses a two-stage physician-defined cohort. Reviewer-1, Reviewer-2
 and adjudicated Gold files remain separate so inter-rater agreement is preserved.
 The public manifest stores file names, row counts and SHA-256 hashes only.
+
+`build_manifest()` is retained only as a backward-compatible validator for the
+historical single-stage test fixture. The manuscript workflow must use
+`build_stage1_manifest()` and `build_final_manifest()`.
 """
 from __future__ import annotations
 
@@ -252,6 +256,62 @@ def build_final_manifest(review_dir: Path):
         'reference_standard_status': 'final_frozen',
         'analysis_plan': 'SCAPHOID_ANALYSIS_PLAN_V0_2',
         'duration_secondary_hypothesis': 'SCAPHOID_DURATION_SECONDARY_HYPOTHESIS_V0_1',
+        'created_at_utc': datetime.now(timezone.utc).isoformat(),
+        'files': {name: file_meta(paths[name], rows[name]) for name in names},
+    }
+
+
+def build_manifest(review_dir: Path):
+    """Backward-compatible single-stage validator for historical tests only.
+
+    This function intentionally does not implement the manuscript freeze. It is
+    retained so old regression tests continue to verify field-level constraints
+    and hash mutation detection. New paper workflows must use the stage-specific
+    functions above.
+    """
+    names = (
+        STAGE1_PRIMARY, STAGE1_REVIEWER2,
+        STATE_PRIMARY, STATE_REVIEWER2,
+        PROCEDURE_PRIMARY, PROCEDURE_REVIEWER2,
+    )
+    paths = {name: review_dir / name for name in names}
+    missing = [name for name, path in paths.items() if not path.exists()]
+    if missing:
+        raise FileNotFoundError(f'missing legacy reference files: {missing}')
+    rows = {name: read_rows(path) for name, path in paths.items()}
+
+    candidate_ids = validate_anatomy_primary(rows[STAGE1_PRIMARY])
+    r2_anatomy_ids = require_unique_ids(rows[STAGE1_REVIEWER2], STAGE1_REVIEWER2)
+    if not r2_anatomy_ids.issubset(candidate_ids):
+        raise ValueError('legacy anatomy reviewer-2 IDs must be a subset of primary IDs')
+    for i, row in enumerate(rows[STAGE1_REVIEWER2], 2):
+        require_allowed(row.get('reviewer2_gold_anatomy_label', '').strip(), ANATOMY_ALLOWED,
+                        f'{STAGE1_REVIEWER2} row {i}')
+
+    require_unique_ids(rows[STATE_PRIMARY], STATE_PRIMARY)
+    for i, row in enumerate(rows[STATE_PRIMARY], 2):
+        require_allowed(row.get('gold_scaphoid_state', '').strip(), STATE_ALLOWED, f'{STATE_PRIMARY} row {i}')
+        validate_duration(row, 'gold_', f'{STATE_PRIMARY} row {i}')
+    r2_state_ids = require_unique_ids(rows[STATE_REVIEWER2], STATE_REVIEWER2)
+    if not r2_state_ids.issubset({r['study_id'].strip() for r in rows[STATE_PRIMARY]}):
+        raise ValueError('legacy state reviewer-2 IDs must be a subset of primary IDs')
+    for i, row in enumerate(rows[STATE_REVIEWER2], 2):
+        require_allowed(row.get('reviewer2_gold_scaphoid_state', '').strip(), STATE_ALLOWED,
+                        f'{STATE_REVIEWER2} row {i}')
+        validate_duration(row, 'reviewer2_gold_', f'{STATE_REVIEWER2} row {i}')
+
+    require_unique_ids(rows[PROCEDURE_PRIMARY], PROCEDURE_PRIMARY)
+    for i, row in enumerate(rows[PROCEDURE_PRIMARY], 2):
+        validate_procedure_row(row, 'gold_', f'{PROCEDURE_PRIMARY} row {i}')
+    r2_proc_ids = require_unique_ids(rows[PROCEDURE_REVIEWER2], PROCEDURE_REVIEWER2)
+    if not r2_proc_ids.issubset({r['study_id'].strip() for r in rows[PROCEDURE_PRIMARY]}):
+        raise ValueError('legacy procedure reviewer-2 IDs must be a subset of primary IDs')
+    for i, row in enumerate(rows[PROCEDURE_REVIEWER2], 2):
+        validate_procedure_row(row, 'reviewer2_gold_', f'{PROCEDURE_REVIEWER2} row {i}')
+
+    return {
+        'manifest_version': 'scaphoid-reference-legacy-v0.1',
+        'reference_standard_status': 'frozen',
         'created_at_utc': datetime.now(timezone.utc).isoformat(),
         'files': {name: file_meta(paths[name], rows[name]) for name in names},
     }
