@@ -1,0 +1,5 @@
+comparison_state_evidence_category,n_public,denominator,interpretation
+explicit_acute_or_recent_injury,7,13,explicit acute/new or recent-injury wording is present
+postoperative_history_without_chronic_keyword,<5,13,postoperative-history wording is present but explicit chronic/nonunion wording is absent
+months_or_years_duration_without_chronic_keyword,<5,13,month/year duration wording is present but explicit chronic/nonunion wording is absent
+insufficient_explicit_state_evidence,<5,13,conservative rule finds insufficient explicit evidence to call the record acute/new
