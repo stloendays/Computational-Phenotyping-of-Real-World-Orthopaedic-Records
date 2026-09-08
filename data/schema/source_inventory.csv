@@ -1,0 +1,19 @@
+disease,module,source_file,format,sheets,data_rows,columns,unique_admission_keys,contains_direct_identifiers,public_release
+hallux_valgus,complaint_exam,2015-2025拇外翻患者主诉和专科查体.xlsx,xlsx,Select bl_v_binglijl,210,17,153,yes,no
+hallux_valgus,demographics_diagnoses,2015-2025拇外翻患者基本信息和诊断信息.xlsx,xlsx,Select select,1855,17,171,yes,no
+hallux_valgus,surgery_name_only,2015-2025拇外翻患者能无法查询手术内容的患者.xlsx,xlsx,Select zy_bingrenxx,41,17,41,yes,no
+hallux_valgus,detailed_operating_note,2015-2025拇外翻患者能查到手术内容的患者.xlsx,xlsx,Select zy_bingrenxx,171,17,117,yes,no
+first_cmc_oa,complaint_exam,2015-2025腕掌关节炎患者主诉和专科查体.xlsx,xlsx,Select bl_v_binglijl,88,17,67,yes,no
+first_cmc_oa,demographics_diagnoses,2015-2025腕掌关节炎患者基本信息和诊断信息.xlsx,xlsx,Select select,868,17,70,yes,no
+first_cmc_oa,surgery_name_only,2015-2025腕掌关节炎患者无法查询手术内容.xlsx,xlsx,Select zy_bingrenxx,11,17,11,yes,no
+first_cmc_oa,detailed_operating_note,2015-2025腕掌关节炎患者能查到手术内容的患者.xlsx,xlsx,Select zy_bingrenxx,77,17,56,yes,no
+scaphoid_fracture,complaint_exam,2015-2025舟骨骨折患者主诉和专科查体.xlsx,xlsx,Select bl_v_binglijl,85,17,72,yes,no
+scaphoid_fracture,demographics_diagnoses,2015-2025舟骨骨折患者基本信息和诊断信息.xlsx,xlsx,Select select,831,17,62,yes,no
+scaphoid_fracture,surgery_name_only,2015-2025舟骨骨折患者无法查询手术内容.xlsx,xlsx,Select zy_bingrenxx,15,17,15,yes,no
+scaphoid_fracture,detailed_operating_note,2015-2025舟骨骨折患者能查到手术内容的患者.xlsx,xlsx,Select zy_bingrenxx,64,17,42,yes,no
+hallux_valgus,imaging_exam,拇外翻检查.xls,xls,拇外翻检查,767,9,168,yes,no
+hallux_valgus,laboratory,拇外翻检验.xls,xls,血常规|凝血常规|红细胞沉|C反应蛋白|肝功|肾功|离子,19542,14,170,yes,no
+first_cmc_oa,imaging_exam,腕掌关节炎检查.xls,xls,腕掌关节炎检查,219,9,70,yes,no
+first_cmc_oa,laboratory,腕掌关节炎检验.xls,xls,离子|血常规|凝血常规|红细胞沉|C反应蛋白|肝功|肾功,8926,14,70,yes,no
+scaphoid_fracture,imaging_exam,舟骨骨折检查.xls,xls,舟骨骨折检查,185,9,56,yes,no
+scaphoid_fracture,laboratory,舟骨骨折检验.xls,xls,血常规|(急)凝血常规|红细胞沉降|C反应蛋白|肝功|肾功|离子,7038,14,53,yes,no
