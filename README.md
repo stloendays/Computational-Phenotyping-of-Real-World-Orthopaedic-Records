@@ -22,6 +22,21 @@ The hypothesis is therefore narrower than “chronic cases receive more complex 
 
 These values are algorithm-derived and provisional until physician adjudication.
 
+## Secondary mechanistic hypothesis
+
+A separate pre-validation audit performed after the primary question was selected identified a possible duration gradient **within established chronic/nonunion operative records**:
+
+- deterministic graft-positive records with explicit duration: 7/8, median **182.6 days**;
+- deterministic graft-negative records with explicit duration: 6/7, median **15.0 days**.
+
+This does **not** replace the primary endpoint. It is frozen as an exploratory secondary hypothesis:
+
+> Within physician-confirmed established chronic/nonunion wrist-scaphoid operative records, is graft augmentation associated with a longer explicitly documented wrist-related injury or symptom duration?
+
+The final duration variable is physician adjudicated. Automated duration-parser outputs are hidden from reviewers. No locally optimized duration cutoff will be used.
+
+See `docs/SCAPHOID_DURATION_SECONDARY_HYPOTHESIS_V0_1.md` and `data/aggregate/scaphoid_duration_signal_v0_1.csv`.
+
 ## Pre-validation cohort audit
 
 The supplied broad scaphoid retrieval contains 88 candidate admission episodes. Phenotype v0.3 currently partitions them into:
@@ -54,16 +69,18 @@ All **88 broad scaphoid candidates** are independently reviewed for:
 
 The Stage-1 anatomy Gold is adjudicated and frozen first.
 
+The 88-row Stage-1 input and 18-row prespecified double-review selection were cryptographically frozen while every anatomy Gold field was blank.
+
 ### Stage 2 — generated from physician anatomy
 
 Only after Stage 1 is frozen does `make_scaph_physician_packet_v0_1.py downstream` generate:
 
 - clinical-state review for every **physician-confirmed wrist-scaphoid** record;
-- procedure relevance/components for physician-confirmed wrist records that have detailed operative documentation.
+- physician-adjudicated relevant duration value/unit/basis;
+- procedure relevance/components for physician-confirmed wrist records with detailed operative documentation;
+- independent Reviewer-2 subset packets containing no Reviewer-1 labels.
 
 Therefore the final state/procedure sample sizes are **not assumed in advance** to equal the deterministic 68 and 31. This design avoids verification bias from allowing the rule system to predefine the clinical study population.
-
-A local Stage-1 packet has already been generated with **88 anatomy rows** and **18 prespecified double-review rows**; all Gold fields are blank. Patient-level review files and the pseudonym salt remain private.
 
 ## Comparison-group caution
 
@@ -78,7 +95,7 @@ Therefore:
 
 See `data/aggregate/scaphoid_comparison_state_audit_v0_1.csv`.
 
-## Outcomes
+## Outcomes and hierarchy
 
 ### Primary outcome
 
@@ -92,36 +109,42 @@ See `data/aggregate/scaphoid_comparison_state_audit_v0_1.csv`.
 
 - graft/reconstruction/fusion augmentation composite;
 - number of major operative components;
-- individual reconstruction/fusion components when sample size permits.
+- individual reconstruction/fusion components when sample size permits;
+- physician-adjudicated relevant duration within established chronic/nonunion records.
 
-The primary outcome was frozen before physician-reference scoring and is not replaced by a composite simply because another analysis yields a smaller P value.
+The primary outcome is not replaced by a composite or the duration analysis simply because another analysis yields a smaller P value.
 
 ## Main manuscript files
 
-- `docs/SCAPHOID_SCIENTIFIC_QUESTION_V0_1.md` — scientific question and claim boundaries;
-- `docs/SCAPHOID_ANALYSIS_PLAN_V0_1.md` — two-stage focused statistical analysis plan;
+- `docs/SCAPHOID_SCIENTIFIC_QUESTION_V0_1.md` — primary scientific question and claim boundaries;
+- `docs/SCAPHOID_ANALYSIS_PLAN_V0_3.md` — current two-stage statistical analysis plan including the duration secondary hypothesis;
+- `docs/SCAPHOID_DURATION_SECONDARY_HYPOTHESIS_V0_1.md` — frozen duration hypothesis and analysis boundary;
 - `docs/DATA_DRIVEN_QUESTION_SELECTION_V0_1.md` — why this question was selected over other signals in the fixed dataset;
-- `docs/SCAPHOID_PHYSICIAN_REVIEW_GUIDE_ZH.md` — two-stage Chinese physician review instructions;
+- `docs/SCAPHOID_PHYSICIAN_REVIEW_GUIDE_ZH.md` — current Chinese physician review instructions;
 - `docs/MANUSCRIPT_PLAN_SCAPHOID_V0_1.md` — article structure and figure plan;
-- `manuscript/SCAPHOID_MANUSCRIPT_DRAFT_V0_2.md` — current English manuscript draft;
+- `manuscript/SCAPHOID_MANUSCRIPT_DRAFT_V0_3.md` — current English manuscript draft;
 - `figures/scaphoid/Figure1_cohort_flow_pre_gold.svg` — current article-style pre-validation cohort-flow figure.
 
 ## Analysis and validation code
 
 - `src/ortho_pheno/scaphoid_augmentation_analysis_v0_1.py` — focused deterministic pre-validation analysis;
 - `src/ortho_pheno/scaphoid_comparison_state_audit_v0_1.py` — comparison-state evidence audit;
-- `src/ortho_pheno/make_scaph_physician_packet_v0_1.py` — local-only two-stage physician packet generator;
+- `src/ortho_pheno/scaphoid_duration_audit_v0_1.py` — secondary duration audit;
+- `src/ortho_pheno/duration_rules.py` — dependency-free Chinese duration parser with regression tests;
+- `src/ortho_pheno/make_scaph_physician_packet_v0_1.py` — local-only two-stage primary/Reviewer-2 packet generator;
+- `src/ortho_pheno/freeze_scaph_reference_v0_1.py` — controlled-vocabulary validation and final SHA-256 reference-standard freeze;
 - `src/ortho_pheno/rules.py` — deterministic anatomy/state measurement rules;
 - `src/ortho_pheno/procedure_rules.py` — procedure-relevance and component rules.
 
 Public-safe aggregate outputs:
 
 - `data/aggregate/scaphoid_augmentation_signal_v0_1.csv`;
-- `data/aggregate/scaphoid_comparison_state_audit_v0_1.csv`.
+- `data/aggregate/scaphoid_comparison_state_audit_v0_1.csv`;
+- `data/aggregate/scaphoid_duration_signal_v0_1.csv`.
 
 ## Interpretation boundary
 
-This study can test an association between established chronic/nonunion presentation and **documented operative composition**.
+This study can test associations between established chronic/nonunion presentation, documented wrist-related duration, and **documented operative composition**.
 
 It cannot establish:
 
@@ -129,7 +152,8 @@ It cannot establish:
 - postoperative union or healing time;
 - treatment efficacy;
 - causal treatment selection;
-- superiority of one graft or fixation strategy.
+- superiority of one graft or fixation strategy;
+- a clinical duration threshold at which grafting should be performed.
 
 ## Secondary data domains
 
@@ -137,6 +161,6 @@ The fixed archive also contains hallux-valgus and first-CMC OA records. Those an
 
 ## Privacy
 
-The source archive contains direct identifiers and protected clinical text. **No raw patient data, pseudonymized row-level data, admission identifiers, patient-level dates, clinical free text, or pseudonym salts are committed to this public repository.**
+The source archive contains direct identifiers and protected clinical text. **No raw patient data, pseudonymized row-level data, admission identifiers, patient-level dates, clinical free text, Reviewer-1/Reviewer-2 packets, or pseudonym salts are committed to this public repository.**
 
 Public artifacts use small-cell suppression (`<5`) when necessary to prevent reverse engineering of patient-level counts.
