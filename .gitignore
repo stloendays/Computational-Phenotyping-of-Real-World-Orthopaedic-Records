@@ -1,0 +1,43 @@
+# Clinical data: never commit raw or row-level patient data
+data/raw/
+data/private/
+data/local/
+*.xlsx
+*.xls
+*.csv
+*.tsv
+*.dta
+*.sav
+*.sas7bdat
+*.parquet
+*.feather
+*.db
+*.sqlite
+
+# Free-text exports and annotations containing PHI
+annotations/private/
+notes/private/
+
+# Model/API secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# IDE / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Generated local artifacts
+outputs/private/
+tmp/
+.cache/
