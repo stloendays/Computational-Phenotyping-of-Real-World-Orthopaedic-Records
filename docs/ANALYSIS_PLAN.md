@@ -83,7 +83,9 @@ Errors are categorized as:
 ### Primary grouping
 
 - established chronic/nonunion phenotype;
-- acute/other wrist-scaphoid phenotype.
+- other strict wrist-scaphoid phenotype.
+
+Under phenotype definition **v0.2**, established chronic/nonunion status is assigned only from non-operative clinical sources: diagnosis, complaint and physical-examination text. Operative names and operative-note contents are explicitly excluded from case assignment because treatment variables are downstream comparison outcomes. This prevents circular case definition and leakage.
 
 ### Primary clinical comparison
 
@@ -106,7 +108,7 @@ Categorical comparisons: Fisher exact test preferred for sparse cells.
 
 Continuous comparisons: Mann-Whitney U or t test, selected according to distribution and scale.
 
-Report effect sizes with 95% confidence intervals.
+Report effect sizes with 95% confidence intervals when public-release cell-size constraints permit.
 
 ### Adjusted analysis
 
@@ -118,7 +120,7 @@ Potential adjustment covariates are limited to variables demonstrably available 
 
 ### Interpretation
 
-The primary claim concerns association between phenotype group and treatment complexity. The model is not described as predicting future nonunion unless the local record explicitly establishes longitudinal progression.
+The primary claim concerns association between established phenotype group and treatment complexity. The model is not described as predicting future nonunion unless the local record explicitly establishes longitudinal progression from an acute baseline.
 
 ## 6. Aim 4: Hallux valgus procedure phenotyping
 
@@ -143,7 +145,7 @@ Primary outputs:
 
 - broad-keyword retrieval count;
 - strict first-CMC phenotype count;
-- false-positive categories from broad retrieval;
+- competing-diagnosis categories from broad retrieval;
 - NLP precision/recall under strict anatomy requirements.
 
 The small strict cohort is not used to train a high-capacity predictive model.
@@ -155,6 +157,8 @@ Because documentation completeness differs across periods, repeat key descriptiv
 1. all available years;
 2. years with complete operative-note capture;
 3. the most internally consistent documentation era.
+
+The cohort audit identified **2023-2025** as the current internally consistent era for the scaphoid treatment-comparison sensitivity analysis. In the supplied exports, 2019-2022 retains complaint/examination records but lacks the operative-note, imaging-exam and laboratory modules for hallux valgus and scaphoid cohorts.
 
 The purpose is to test robustness to source-system changes, not to optimize significance.
 
@@ -188,7 +192,18 @@ Performance claims require:
 
 If sample size does not support these requirements, the ML analysis is omitted rather than overstated.
 
-## 12. Reproducibility outputs
+## 12. Public-release privacy rules
+
+The public repository contains aggregate outputs only.
+
+- patient-level rows, identifiers, dates and free text are never committed;
+- non-zero aggregate cells smaller than 5 are displayed as `<5`;
+- if an odds ratio, confidence interval or exact P value could reveal a suppressed 1-4 cell, the inferential statistic is also suppressed;
+- rare multi-label procedure combinations are pooled rather than released individually.
+
+These rules apply to public artifacts and do not alter the internal statistical calculations.
+
+## 13. Reproducibility outputs
 
 Every result table or figure should be generated from:
 
