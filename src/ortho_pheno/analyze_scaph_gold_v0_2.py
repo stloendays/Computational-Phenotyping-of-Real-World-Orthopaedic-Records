@@ -2,9 +2,9 @@
 """Privacy-tight public wrapper for the prespecified scaphoid post-Gold analysis.
 
 The statistical engine is `analyze_scaph_gold_v0_1.py`. This v0.2 entrypoint
-strengthens public-release suppression: if an outcome cell, denominator, or duration
-subgroup contains 1-4 records, the public artifact never exposes enough detail to
-reconstruct the small cell. Exact results remain in the private manuscript JSON.
+strengthens public-release suppression and enforces the repository-wide duration
+conversion convention from `duration_rules.py` before physician-Gold records are
+constructed. Exact results remain in the private manuscript JSON.
 """
 from __future__ import annotations
 
@@ -13,13 +13,18 @@ import argparse
 import csv
 import json
 
-from analyze_scaph_gold_v0_1 import (
-    load_gold,
-    load_demographics,
-    operative_records,
-    analyze,
-)
+import analyze_scaph_gold_v0_1 as engine
+from duration_rules import DURATION_UNIT_TO_DAYS
 from make_scaph_physician_packet_v0_1 import load_salt
+
+# The v0.1 engine is retained for version history. The current manuscript
+# entrypoint explicitly injects the shared conversion so 12 months == 1 year.
+engine.DURATION_TO_DAYS = dict(DURATION_UNIT_TO_DAYS)
+
+load_gold = engine.load_gold
+load_demographics = engine.load_demographics
+operative_records = engine.operative_records
+analyze = engine.analyze
 
 
 def suppress_n(n):
@@ -96,8 +101,7 @@ def write_public_csv(path: Path, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
     fields = ['metric', 'chronic_nonunion', 'acute_new', 'note']
     with path.open('w', encoding='utf-8-sig', newline='') as f:
-        w = csv.DictWriter(f, fieldnames=fields)
-        w.writeheader(); w.writerows(rows)
+        w = csv.DictWriter(f, fieldnames=fields); w.writeheader(); w.writerows(rows)
 
 
 def main():
