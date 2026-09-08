@@ -19,6 +19,8 @@ DISEASE_ALLOWED = {
     'scaphoid_fracture': {'wrist_scaphoid','foot_navicular','other','uncertain'},
     'first_cmc_oa': {'yes','no','uncertain'},
 }
+HALLUX_LATERALITY_ALLOWED = {'left','right','bilateral','unclear','undocumented'}
+HALLUX_STATUS_ALLOWED = {'present','absent','undocumented','uncertain'}
 SCAPHOID_STATE_ALLOWED = {
     'acute_or_new_fracture','established_chronic_fracture','established_nonunion',
     'chronic_nonunion_not_distinguishable','insufficient_or_uncertain',
@@ -61,6 +63,18 @@ def require_unique_ids(rows,path):
         raise ValueError(f'{path.name}: duplicate study_id')
 
 
+def _validate_optional_angle(value,row_number):
+    value=(value or '').strip()
+    if not value:
+        return
+    try:
+        x=float(value)
+    except ValueError as exc:
+        raise ValueError(f'disease row {row_number}: hallux deformity angle must be numeric or blank') from exc
+    if not (0 < x <= 180):
+        raise ValueError(f'disease row {row_number}: hallux deformity angle outside 0-180 degrees')
+
+
 def validate_disease(rows):
     require_unique_ids(rows,Path('disease_anatomy_annotation.csv'))
     for i,row in enumerate(rows,2):
@@ -69,6 +83,31 @@ def validate_disease(rows):
             raise ValueError(f'disease row {i}: unknown domain {domain!r}')
         if label not in DISEASE_ALLOWED[domain]:
             raise ValueError(f'disease row {i}: invalid/blank gold label {label!r} for {domain}')
+
+        if domain=='hallux_valgus':
+            laterality=row.get('gold_hallux_laterality','').strip()
+            bilateral=row.get('gold_hallux_bilateral_disease_mention','').strip()
+            pain=row.get('gold_hallux_pain','').strip()
+            function=row.get('gold_hallux_functional_limitation','').strip()
+            angle=row.get('gold_hallux_deformity_angle_deg','')
+
+            # Baseline phenotype fields are required only when the physician has
+            # confirmed the hallux-valgus disease phenotype. For non-cases or
+            # uncertain cases they may remain blank; if populated, they must
+            # still respect the controlled vocabulary.
+            if label=='yes':
+                if laterality not in HALLUX_LATERALITY_ALLOWED:
+                    raise ValueError(f'disease row {i}: confirmed hallux case requires valid laterality')
+                for name,value in [('bilateral',bilateral),('pain',pain),('functional_limitation',function)]:
+                    if value not in HALLUX_STATUS_ALLOWED:
+                        raise ValueError(f'disease row {i}: confirmed hallux case requires valid {name} status')
+            else:
+                if laterality and laterality not in HALLUX_LATERALITY_ALLOWED:
+                    raise ValueError(f'disease row {i}: invalid hallux laterality {laterality!r}')
+                for name,value in [('bilateral',bilateral),('pain',pain),('functional_limitation',function)]:
+                    if value and value not in HALLUX_STATUS_ALLOWED:
+                        raise ValueError(f'disease row {i}: invalid hallux {name} status {value!r}')
+            _validate_optional_angle(angle,i)
 
 
 def validate_state(rows):
