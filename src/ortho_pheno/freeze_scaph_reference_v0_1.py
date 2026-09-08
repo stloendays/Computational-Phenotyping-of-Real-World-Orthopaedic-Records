@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
-"""Validate and cryptographically freeze the scaphoid physician reference standard.
+"""Validate and cryptographically freeze the scaphoid-only physician reference standard.
 
-This tool is intentionally independent of the clinical extraction/model code. It
-checks controlled vocabularies, duration-field consistency, procedure-label
-consistency, row uniqueness, and reviewer-2 subset completion before generating a
-SHA-256 manifest.
-
-The manifest contains file names, row counts, and hashes only. It never contains
-study IDs, labels, or clinical text.
+The main paper uses a two-stage physician-defined cohort. Reviewer-1, Reviewer-2
+and adjudicated Gold files remain separate so inter-rater agreement is preserved.
+The public manifest stores file names, row counts and SHA-256 hashes only.
 """
 from __future__ import annotations
 
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 import argparse
 import csv
 import hashlib
 import json
 
-ANATOMY_ALLOWED = {'wrist_scaphoid','foot_navicular','other','uncertain'}
+ANATOMY_ALLOWED = {'wrist_scaphoid', 'foot_navicular', 'other', 'uncertain'}
 STATE_ALLOWED = {
     'acute_or_new_fracture',
     'established_chronic_fracture',
@@ -26,22 +22,21 @@ STATE_ALLOWED = {
     'chronic_nonunion_not_distinguishable',
     'insufficient_or_uncertain',
 }
-DURATION_PRESENT_ALLOWED = {'yes','no','uncertain'}
-DURATION_UNIT_ALLOWED = {'hours','days','weeks','months','years'}
-DURATION_BASIS_ALLOWED = {'injury_since_event','wrist_symptom_duration','both','uncertain'}
-RELEVANCE_ALLOWED = {'yes','no','uncertain'}
-COMPONENT_ALLOWED = {'yes','no','uncertain'}
+YES_NO_UNCERTAIN = {'yes', 'no', 'uncertain'}
+DURATION_UNITS = {'hours', 'days', 'weeks', 'months', 'years'}
+DURATION_BASIS = {'injury_since_event', 'wrist_symptom_duration', 'both', 'uncertain'}
 
-PRIMARY_FILES = (
-    'scaphoid_anatomy_review.csv',
-    'scaphoid_state_review.csv',
-    'scaphoid_procedure_review.csv',
-)
-REVIEWER2_FILES = (
-    'scaphoid_anatomy_review_reviewer2.csv',
-    'scaphoid_state_review_reviewer2.csv',
-    'scaphoid_procedure_review_reviewer2.csv',
-)
+STAGE1_PRIMARY = 'scaphoid_anatomy_review.csv'
+STAGE1_REVIEWER2 = 'scaphoid_anatomy_review_reviewer2.csv'
+STAGE1_MANIFEST = 'scaphoid_anatomy_double_review_manifest.csv'
+STAGE1_FINAL = 'scaphoid_anatomy_adjudicated.csv'
+STATE_PRIMARY = 'scaphoid_state_review.csv'
+STATE_REVIEWER2 = 'scaphoid_state_review_reviewer2.csv'
+PROCEDURE_PRIMARY = 'scaphoid_procedure_review.csv'
+PROCEDURE_REVIEWER2 = 'scaphoid_procedure_review_reviewer2.csv'
+DOWNSTREAM_MANIFEST = 'scaphoid_downstream_double_review_manifest.csv'
+STATE_FINAL = 'scaphoid_state_adjudicated.csv'
+PROCEDURE_FINAL = 'scaphoid_procedure_adjudicated.csv'
 
 
 def read_rows(path: Path):
@@ -57,155 +52,235 @@ def sha256_file(path: Path):
     return h.hexdigest()
 
 
-def require_unique_ids(rows, file_name):
-    ids = [row.get('study_id','').strip() for row in rows]
-    if any(not sid for sid in ids):
-        raise ValueError(f'{file_name}: blank study_id')
+def require_unique_ids(rows, filename):
+    ids = [r.get('study_id', '').strip() for r in rows]
+    if any(not x for x in ids):
+        raise ValueError(f'{filename}: blank study_id')
     if len(ids) != len(set(ids)):
-        raise ValueError(f'{file_name}: duplicate study_id')
+        raise ValueError(f'{filename}: duplicate study_id')
+    return set(ids)
 
 
-def validate_duration_fields(row, prefix, context):
-    present = row.get(f'{prefix}gold_relevant_duration_present','').strip()
-    value = row.get(f'{prefix}gold_relevant_duration_value','').strip()
-    unit = row.get(f'{prefix}gold_relevant_duration_unit','').strip()
-    basis = row.get(f'{prefix}gold_duration_basis','').strip()
+def require_allowed(value, allowed, context):
+    if value not in allowed:
+        raise ValueError(f'{context}: invalid/blank value {value!r}')
 
-    if present not in DURATION_PRESENT_ALLOWED:
-        raise ValueError(f'{context}: invalid/blank duration-present label {present!r}')
 
+def validate_duration(row, prefix, context):
+    present = row.get(f'{prefix}relevant_duration_present', '').strip()
+    value = row.get(f'{prefix}relevant_duration_value', '').strip()
+    unit = row.get(f'{prefix}relevant_duration_unit', '').strip()
+    basis = row.get(f'{prefix}duration_basis', '').strip()
+    require_allowed(present, YES_NO_UNCERTAIN, f'{context} duration-present')
     if present == 'yes':
         try:
             numeric = float(value)
-        except Exception as exc:
-            raise ValueError(f'{context}: duration present=yes requires numeric value') from exc
-        if not numeric > 0:
-            raise ValueError(f'{context}: duration value must be > 0')
-        if unit not in DURATION_UNIT_ALLOWED:
-            raise ValueError(f'{context}: invalid duration unit {unit!r}')
-        if basis not in DURATION_BASIS_ALLOWED:
-            raise ValueError(f'{context}: invalid duration basis {basis!r}')
+        except ValueError as exc:
+            raise ValueError(f'{context}: duration value must be numeric') from exc
+        if numeric <= 0:
+            raise ValueError(f'{context}: duration value must be >0')
+        require_allowed(unit, DURATION_UNITS, f'{context} duration-unit')
+        require_allowed(basis, DURATION_BASIS - {'uncertain'}, f'{context} duration-basis')
     elif present == 'no':
         if value or unit or basis:
-            raise ValueError(f'{context}: duration present=no requires blank value/unit/basis')
-    else:  # uncertain
+            raise ValueError(f'{context}: duration value/unit/basis must be blank when present=no')
+    else:
         if value or unit:
-            raise ValueError(f'{context}: duration present=uncertain requires blank value/unit')
+            raise ValueError(f'{context}: duration value/unit must be blank when present=uncertain')
         if basis not in ('', 'uncertain'):
-            raise ValueError(f'{context}: uncertain duration may only have blank/uncertain basis')
+            raise ValueError(f'{context}: uncertain duration basis must be blank or uncertain')
 
 
-def validate_anatomy(rows, prefix=''):
-    require_unique_ids(rows, f'{prefix or "primary"} anatomy')
-    field = f'{prefix}gold_anatomy_label'
-    for i,row in enumerate(rows,2):
-        label = row.get(field,'').strip()
-        if label not in ANATOMY_ALLOWED:
-            raise ValueError(f'anatomy row {i}: invalid/blank label {label!r}')
+def manifest_ids(rows, layer):
+    ids = {r.get('study_id', '').strip() for r in rows if r.get('layer', '').strip() == layer}
+    if '' in ids:
+        raise ValueError(f'{layer} manifest: blank study_id')
+    return ids
 
 
-def validate_state(rows, prefix=''):
-    require_unique_ids(rows, f'{prefix or "primary"} state')
-    field = f'{prefix}gold_scaphoid_state'
-    for i,row in enumerate(rows,2):
-        label = row.get(field,'').strip()
-        if label not in STATE_ALLOWED:
-            raise ValueError(f'state row {i}: invalid/blank state {label!r}')
-        validate_duration_fields(row, prefix, f'state row {i}')
+def validate_anatomy_primary(rows):
+    ids = require_unique_ids(rows, STAGE1_PRIMARY)
+    if len(rows) != 88:
+        raise ValueError(f'{STAGE1_PRIMARY}: expected 88 rows, found {len(rows)}')
+    for i, row in enumerate(rows, 2):
+        require_allowed(row.get('gold_anatomy_label', '').strip(), ANATOMY_ALLOWED, f'{STAGE1_PRIMARY} row {i}')
+    return ids
 
 
-def validate_procedure(rows, prefix=''):
-    require_unique_ids(rows, f'{prefix or "primary"} procedure')
-    relevance_field = f'{prefix}gold_target_disease_procedure_present'
-    component_fields = [
-        f'{prefix}gold_internal_fixation',
-        f'{prefix}gold_bone_graft',
-        f'{prefix}gold_reconstruction',
-        f'{prefix}gold_fusion',
-    ]
-    for i,row in enumerate(rows,2):
-        relevance = row.get(relevance_field,'').strip()
-        if relevance not in RELEVANCE_ALLOWED:
-            raise ValueError(f'procedure row {i}: invalid/blank relevance {relevance!r}')
-        values = [row.get(field,'').strip() for field in component_fields]
-        if relevance == 'yes':
-            bad = [v for v in values if v not in COMPONENT_ALLOWED]
-            if bad:
-                raise ValueError(f'procedure row {i}: relevance=yes requires yes/no/uncertain for every component')
-        else:
-            if any(values):
-                raise ValueError(f'procedure row {i}: component labels must be blank when relevance is not yes')
+def validate_anatomy_reviewer2(rows, expected_ids):
+    ids = require_unique_ids(rows, STAGE1_REVIEWER2)
+    if ids != expected_ids:
+        raise ValueError(f'{STAGE1_REVIEWER2}: IDs must exactly match the frozen double-review manifest')
+    for i, row in enumerate(rows, 2):
+        require_allowed(row.get('reviewer2_gold_anatomy_label', '').strip(), ANATOMY_ALLOWED,
+                        f'{STAGE1_REVIEWER2} row {i}')
 
 
-def ensure_subset(primary_rows, reviewer2_rows, layer):
-    primary_ids = {r['study_id'].strip() for r in primary_rows}
-    reviewer2_ids = {r['study_id'].strip() for r in reviewer2_rows}
-    if not reviewer2_ids <= primary_ids:
-        raise ValueError(f'{layer}: reviewer-2 IDs are not a subset of primary review IDs')
-    if not reviewer2_ids:
-        raise ValueError(f'{layer}: reviewer-2 packet is empty')
+def validate_anatomy_final(rows, candidate_ids):
+    ids = require_unique_ids(rows, STAGE1_FINAL)
+    if ids != candidate_ids:
+        raise ValueError(f'{STAGE1_FINAL}: IDs must equal all 88 broad candidates')
+    for i, row in enumerate(rows, 2):
+        require_allowed(row.get('gold_anatomy_label', '').strip(), ANATOMY_ALLOWED, f'{STAGE1_FINAL} row {i}')
+    return ids
 
 
-def build_manifest(review_dir: Path):
-    paths = {name: review_dir / name for name in PRIMARY_FILES + REVIEWER2_FILES}
-    missing = [name for name,path in paths.items() if not path.exists()]
+def validate_state_primary(rows, wrist_ids):
+    ids = require_unique_ids(rows, STATE_PRIMARY)
+    if ids != wrist_ids:
+        raise ValueError(f'{STATE_PRIMARY}: IDs must equal physician-confirmed wrist-scaphoid IDs')
+    for i, row in enumerate(rows, 2):
+        require_allowed(row.get('gold_scaphoid_state', '').strip(), STATE_ALLOWED, f'{STATE_PRIMARY} row {i}')
+        validate_duration(row, 'gold_', f'{STATE_PRIMARY} row {i}')
+    return ids
+
+
+def validate_state_reviewer2(rows, expected_ids):
+    ids = require_unique_ids(rows, STATE_REVIEWER2)
+    if ids != expected_ids:
+        raise ValueError(f'{STATE_REVIEWER2}: IDs must exactly match the state double-review manifest')
+    for i, row in enumerate(rows, 2):
+        require_allowed(row.get('reviewer2_gold_scaphoid_state', '').strip(), STATE_ALLOWED,
+                        f'{STATE_REVIEWER2} row {i}')
+        validate_duration(row, 'reviewer2_gold_', f'{STATE_REVIEWER2} row {i}')
+
+
+def validate_procedure_row(row, prefix, context):
+    rel = row.get(f'{prefix}target_disease_procedure_present', '').strip()
+    require_allowed(rel, YES_NO_UNCERTAIN, f'{context} relevance')
+    fields = ('internal_fixation', 'bone_graft', 'reconstruction', 'fusion')
+    values = [row.get(f'{prefix}{name}', '').strip() for name in fields]
+    if rel == 'yes':
+        for name, value in zip(fields, values):
+            require_allowed(value, YES_NO_UNCERTAIN, f'{context} {name}')
+    elif any(values):
+        raise ValueError(f'{context}: procedure components must be blank unless relevance=yes')
+
+
+def validate_procedure_primary(rows, wrist_ids):
+    ids = require_unique_ids(rows, PROCEDURE_PRIMARY)
+    if not ids.issubset(wrist_ids):
+        raise ValueError(f'{PROCEDURE_PRIMARY}: contains non-wrist study IDs')
+    for i, row in enumerate(rows, 2):
+        validate_procedure_row(row, 'gold_', f'{PROCEDURE_PRIMARY} row {i}')
+    return ids
+
+
+def validate_procedure_reviewer2(rows, expected_ids):
+    ids = require_unique_ids(rows, PROCEDURE_REVIEWER2)
+    if ids != expected_ids:
+        raise ValueError(f'{PROCEDURE_REVIEWER2}: IDs must exactly match the procedure double-review manifest')
+    for i, row in enumerate(rows, 2):
+        validate_procedure_row(row, 'reviewer2_gold_', f'{PROCEDURE_REVIEWER2} row {i}')
+
+
+def validate_state_final(rows, wrist_ids):
+    ids = require_unique_ids(rows, STATE_FINAL)
+    if ids != wrist_ids:
+        raise ValueError(f'{STATE_FINAL}: IDs must equal physician-confirmed wrist-scaphoid IDs')
+    for i, row in enumerate(rows, 2):
+        require_allowed(row.get('gold_scaphoid_state', '').strip(), STATE_ALLOWED, f'{STATE_FINAL} row {i}')
+        validate_duration(row, 'gold_', f'{STATE_FINAL} row {i}')
+
+
+def validate_procedure_final(rows, procedure_ids):
+    ids = require_unique_ids(rows, PROCEDURE_FINAL)
+    if ids != procedure_ids:
+        raise ValueError(f'{PROCEDURE_FINAL}: IDs must equal the Stage-2 procedure-review population')
+    for i, row in enumerate(rows, 2):
+        validate_procedure_row(row, 'gold_', f'{PROCEDURE_FINAL} row {i}')
+
+
+def file_meta(path, rows):
+    return {'row_count': len(rows), 'sha256': sha256_file(path)}
+
+
+def build_stage1_manifest(review_dir: Path):
+    names = (STAGE1_PRIMARY, STAGE1_REVIEWER2, STAGE1_MANIFEST, STAGE1_FINAL)
+    paths = {name: review_dir / name for name in names}
+    missing = [name for name, path in paths.items() if not path.exists()]
     if missing:
-        raise FileNotFoundError(f'missing reference-standard files: {missing}')
+        raise FileNotFoundError(f'missing Stage-1 files: {missing}')
+    rows = {name: read_rows(path) for name, path in paths.items()}
+    candidate_ids = validate_anatomy_primary(rows[STAGE1_PRIMARY])
+    reviewer2_ids = manifest_ids(rows[STAGE1_MANIFEST], 'anatomy')
+    validate_anatomy_reviewer2(rows[STAGE1_REVIEWER2], reviewer2_ids)
+    validate_anatomy_final(rows[STAGE1_FINAL], candidate_ids)
+    return {
+        'manifest_version': 'scaphoid-stage1-v0.1',
+        'reference_standard_status': 'stage1_frozen',
+        'created_at_utc': datetime.now(timezone.utc).isoformat(),
+        'files': {name: file_meta(paths[name], rows[name]) for name in names},
+    }
 
-    rows = {name: read_rows(path) for name,path in paths.items()}
 
-    validate_anatomy(rows['scaphoid_anatomy_review.csv'])
-    validate_state(rows['scaphoid_state_review.csv'])
-    validate_procedure(rows['scaphoid_procedure_review.csv'])
+def build_final_manifest(review_dir: Path):
+    names = (
+        STAGE1_FINAL,
+        STATE_PRIMARY, STATE_REVIEWER2,
+        PROCEDURE_PRIMARY, PROCEDURE_REVIEWER2,
+        DOWNSTREAM_MANIFEST,
+        STATE_FINAL, PROCEDURE_FINAL,
+    )
+    paths = {name: review_dir / name for name in names}
+    missing = [name for name, path in paths.items() if not path.exists()]
+    if missing:
+        raise FileNotFoundError(f'missing final-reference files: {missing}')
+    rows = {name: read_rows(path) for name, path in paths.items()}
 
-    validate_anatomy(rows['scaphoid_anatomy_review_reviewer2.csv'], prefix='reviewer2_')
-    validate_state(rows['scaphoid_state_review_reviewer2.csv'], prefix='reviewer2_')
-    validate_procedure(rows['scaphoid_procedure_review_reviewer2.csv'], prefix='reviewer2_')
+    anatomy_ids = require_unique_ids(rows[STAGE1_FINAL], STAGE1_FINAL)
+    if len(anatomy_ids) != 88:
+        raise ValueError(f'{STAGE1_FINAL}: expected 88 rows')
+    wrist_ids = set()
+    for i, row in enumerate(rows[STAGE1_FINAL], 2):
+        label = row.get('gold_anatomy_label', '').strip()
+        require_allowed(label, ANATOMY_ALLOWED, f'{STAGE1_FINAL} row {i}')
+        if label == 'wrist_scaphoid':
+            wrist_ids.add(row['study_id'].strip())
 
-    ensure_subset(rows['scaphoid_anatomy_review.csv'], rows['scaphoid_anatomy_review_reviewer2.csv'], 'anatomy')
-    ensure_subset(rows['scaphoid_state_review.csv'], rows['scaphoid_state_review_reviewer2.csv'], 'state')
-    ensure_subset(rows['scaphoid_procedure_review.csv'], rows['scaphoid_procedure_review_reviewer2.csv'], 'procedure')
-
-    if len(rows['scaphoid_anatomy_review.csv']) != 88:
-        raise ValueError('Stage-1 anatomy Gold must retain all 88 frozen candidate rows')
+    validate_state_primary(rows[STATE_PRIMARY], wrist_ids)
+    procedure_ids = validate_procedure_primary(rows[PROCEDURE_PRIMARY], wrist_ids)
+    state_r2_ids = manifest_ids(rows[DOWNSTREAM_MANIFEST], 'state')
+    procedure_r2_ids = manifest_ids(rows[DOWNSTREAM_MANIFEST], 'procedure')
+    validate_state_reviewer2(rows[STATE_REVIEWER2], state_r2_ids)
+    validate_procedure_reviewer2(rows[PROCEDURE_REVIEWER2], procedure_r2_ids)
+    validate_state_final(rows[STATE_FINAL], wrist_ids)
+    validate_procedure_final(rows[PROCEDURE_FINAL], procedure_ids)
 
     return {
-        'manifest_version':'scaphoid-reference-v0.1',
-        'reference_standard_status':'frozen',
-        'study_design':'two-stage physician-defined scaphoid cohort',
-        'analysis_plan':'SCAPHOID_ANALYSIS_PLAN_V0_3',
-        'duration_secondary_hypothesis':'SCAPHOID_DURATION_SECONDARY_HYPOTHESIS_V0_1',
-        'created_at_utc':datetime.now(timezone.utc).isoformat(),
-        'files':{
-            name:{
-                'row_count':len(rows[name]),
-                'sha256':sha256_file(paths[name]),
-            }
-            for name in PRIMARY_FILES + REVIEWER2_FILES
-        },
+        'manifest_version': 'scaphoid-final-v0.1',
+        'reference_standard_status': 'final_frozen',
+        'analysis_plan': 'SCAPHOID_ANALYSIS_PLAN_V0_2',
+        'duration_secondary_hypothesis': 'SCAPHOID_DURATION_SECONDARY_HYPOTHESIS_V0_1',
+        'created_at_utc': datetime.now(timezone.utc).isoformat(),
+        'files': {name: file_meta(paths[name], rows[name]) for name in names},
     }
 
 
 def verify_manifest(review_dir: Path, manifest_path: Path):
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-    if manifest.get('reference_standard_status') != 'frozen':
-        raise ValueError('reference standard manifest is not frozen')
-    for name,meta in manifest.get('files',{}).items():
+    for name, meta in manifest.get('files', {}).items():
         path = review_dir / name
         if not path.exists():
             raise FileNotFoundError(name)
         if sha256_file(path) != meta.get('sha256'):
-            raise ValueError(f'reference-standard hash mismatch: {name}')
+            raise ValueError(f'hash mismatch: {name}')
     return True
 
 
-if __name__ == '__main__':
+def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--review-dir', required=True)
     ap.add_argument('--output', required=True)
+    ap.add_argument('--stage', choices=('stage1', 'final'), required=True)
     args = ap.parse_args()
-    manifest = build_manifest(Path(args.review_dir))
+    review_dir = Path(args.review_dir)
+    manifest = build_stage1_manifest(review_dir) if args.stage == 'stage1' else build_final_manifest(review_dir)
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
-    print(f'frozen scaphoid reference standard: {out}')
+    print(f'frozen {args.stage} reference standard: {out}')
+
+
+if __name__ == '__main__':
+    main()
