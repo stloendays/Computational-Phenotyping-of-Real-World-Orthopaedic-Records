@@ -15,6 +15,10 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from rules import HALLUX_RE, CMC_RE, SCAPHOID_CHRONIC_RE, scaphoid_anatomy_class
 from procedure_rules import note_is_domain_concordant, extract_procedure_labels
+from hallux_baseline_rules import (
+    predict_laterality, predict_bilateral_disease_mention,
+    predict_pain, predict_functional_limitation,
+)
 
 
 def read_source_rows(path: Path):
@@ -44,16 +48,30 @@ def disease_anatomy_predictions(rows):
         ])
         if domain == 'hallux_valgus':
             pred = 'yes' if HALLUX_RE.search(text) else 'no'
+            laterality=predict_laterality(text)
+            bilateral=predict_bilateral_disease_mention(text)
+            pain=predict_pain(text)
+            function=predict_functional_limitation(text)
         elif domain == 'first_cmc_oa':
             pred = 'yes' if CMC_RE.search(text) else 'no'
+            laterality=bilateral=pain=function=''
         elif domain == 'scaphoid_fracture':
             cls = scaphoid_anatomy_class(text)
             pred = {'wrist_scaphoid':'wrist_scaphoid',
                     'foot_navicular':'foot_navicular',
                     'ambiguous':'uncertain'}[cls]
+            laterality=bilateral=pain=function=''
         else:
             raise ValueError(f'unknown domain: {domain}')
-        out.append({'study_id':row['study_id'],'domain':domain,'pred_disease_anatomy_label':pred})
+        out.append({
+            'study_id':row['study_id'],
+            'domain':domain,
+            'pred_disease_anatomy_label':pred,
+            'pred_hallux_laterality':laterality,
+            'pred_hallux_bilateral_disease_mention':bilateral,
+            'pred_hallux_pain':pain,
+            'pred_hallux_functional_limitation':function,
+        })
     return out
 
 
@@ -91,7 +109,9 @@ def build(annotation_dir: Path, output_dir: Path):
 
     write_rows(output_dir/'rule_disease_anatomy_predictions.csv',
                disease_anatomy_predictions(disease),
-               ['study_id','domain','pred_disease_anatomy_label'])
+               ['study_id','domain','pred_disease_anatomy_label',
+                'pred_hallux_laterality','pred_hallux_bilateral_disease_mention',
+                'pred_hallux_pain','pred_hallux_functional_limitation'])
     write_rows(output_dir/'rule_scaphoid_state_predictions.csv',
                scaphoid_state_predictions(state),
                ['study_id','pred_scaphoid_state_binary'])
