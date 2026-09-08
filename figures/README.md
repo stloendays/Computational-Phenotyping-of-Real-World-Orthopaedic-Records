@@ -1,56 +1,78 @@
 # Manuscript figures
 
-This directory separates **journal main-text figures** from repository/supplementary schematics.
+The main paper is now **scaphoid problem-first**. Figures are organized around the clinical question rather than the earlier multi-disease computational workflow.
 
-## Important reclassification
+## Current main-text sequence
 
-The first pre-gold graphics were intentionally useful for repository review and method communication, but they are **too workflow-heavy for the main Results figures of a journal article**.
+### Figure 1 — Cohort derivation and operative analytic denominator
 
-Accordingly:
+Current pre-gold vector figure:
 
-- `pre_gold/Figure1_validation_first_framework.svg` is now treated as a **Supplementary / repository overview schematic**, not the preferred main-text Figure 1;
-- `pre_gold/Figure2_cohort_reconstruction.svg` contains reusable quantitative content, but the final main-text version should be reformatted according to `docs/JOURNAL_FIGURE_PLAN_V0_1.md`;
-- `pre_gold/Figure3_procedure_attribution.svg` similarly remains an auditable prototype; the final main-text version should foreground quantitative attribution error rather than workflow boxes.
+- [`scaphoid/Figure1_cohort_flow_pre_gold.svg`](scaphoid/Figure1_cohort_flow_pre_gold.svg)
 
-No data or audit result has been withdrawn. This is a **manuscript-design correction**, not a change in scientific evidence.
+It shows:
 
-## Journal main-figure principle
+`88 broad scaphoid candidates`
 
-A main figure must answer a scientific question using data, denominators, uncertainty or validated performance. Project-management concepts such as public/private zones, freeze governance and repository architecture belong in Methods, Supplementary Information or the README unless they are directly necessary to interpret a quantitative result.
+→ `68 high-specificity wrist scaphoid`
 
-The current preferred main-text hierarchy is:
+→ `23 established chronic/nonunion | 45 comparison`
 
-1. **Study cohort derivation and analytical sample**;
-2. **Data-quality distortions corrected during phenotyping**;
-3. **Procedure-attribution error in operative records**;
-4. **Physician-reference validation benchmark**;
-5. **Hallux-valgus clinical/procedure phenotype**;
-6. **Scaphoid phenotype and treatment pattern**.
+→ `15 | 13 disease-concordant detailed operative records`.
 
-See [`docs/JOURNAL_FIGURE_PLAN_V0_1.md`](../docs/JOURNAL_FIGURE_PLAN_V0_1.md) for panel-level specifications.
+All 28 current operative analytic records occur in 2023-2025.
 
-## Existing pre-gold assets
+### Figure 2 — Treatment composition by phenotype group
 
-The current SVG files remain retained for auditability:
+**Final figure waits for physician-adjudicated clinical labels.**
 
-- [`pre_gold/Figure1_validation_first_framework.svg`](pre_gold/Figure1_validation_first_framework.svg);
-- [`pre_gold/Figure2_cohort_reconstruction.svg`](pre_gold/Figure2_cohort_reconstruction.svg);
-- [`pre_gold/Figure3_procedure_attribution.svg`](pre_gold/Figure3_procedure_attribution.svg).
+Planned panels:
 
-They should not automatically be interpreted as final journal main figures.
+- internal fixation by phenotype;
+- bone-graft augmentation by phenotype;
+- odds ratios with 95% confidence intervals.
 
-## Reproducibility
+Exact small-cell treatment counts are not published in an open figure before the privacy/physician-validation gate.
 
-`src/ortho_pheno/build_manuscript_assets_v0_1.py` regenerates the original pre-gold assets and Table 1 using only privacy-preserving aggregate CSVs committed to the repository. Those files remain versioned historical outputs.
+### Figure 3 — Validation of the clinical variables used in the paper
 
-A journal-oriented v0.2 figure generator will use the same aggregate evidence but reduce explanatory workflow content, remove in-figure promotional headings, and prioritize quantitative panels.
+Only the measurements required for the scientific conclusion:
 
-## Visual style for final journal figures
+- wrist-scaphoid anatomy;
+- chronic/nonunion state;
+- target-disease procedure relevance;
+- internal fixation;
+- bone graft.
+
+Generic multi-disease NLP benchmark panels are not required in the main article.
+
+### Figure 4 — Robustness / influence
+
+Optional main or supplementary figure:
+
+- physician-adjudicated versus deterministic effect estimate;
+- physician-confirmed acute-only sensitivity analysis;
+- leave-one-out influence analysis;
+- primary bone-graft outcome versus broader augmentation composite.
+
+## Historical / supplementary graphics
+
+The original workflow-heavy files remain for auditability and repository documentation:
+
+- `pre_gold/Figure1_validation_first_framework.svg`;
+- `pre_gold/Figure2_cohort_reconstruction.svg`;
+- `pre_gold/Figure3_procedure_attribution.svg`.
+
+These are **not current main-text figures**. They may be used in Supplementary Methods or repository documentation if useful.
+
+## Visual style
 
 - white background;
-- black/dark-grey/light-grey palette;
-- no gradients, shadows or decorative icons;
-- concise A-D panel labels;
-- axes, denominators and confidence intervals where relevant;
-- minimal explanatory text inside plotting regions;
-- vector output for lossless journal export.
+- black/dark-gray/light-gray data marks;
+- no promotional title bands, decorative icons, shadows or gradients;
+- concise panel letters;
+- explicit denominators;
+- effect estimates and confidence intervals when inferential results are displayed;
+- vector output for journal export.
+
+See `docs/JOURNAL_FIGURE_PLAN_V0_1.md` and `docs/MANUSCRIPT_PLAN_SCAPHOID_V0_1.md`.
