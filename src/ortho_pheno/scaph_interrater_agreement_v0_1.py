@@ -15,15 +15,8 @@ import statistics
 
 from scipy.stats import spearmanr
 
+from duration_rules import DURATION_UNIT_TO_DAYS
 from evaluate_annotations import categorical_metrics
-
-DURATION_TO_DAYS = {
-    'hours': 1 / 24,
-    'days': 1,
-    'weeks': 7,
-    'months': 30.44,
-    'years': 365.25,
-}
 
 CHRONIC_STATES = {
     'established_chronic_fracture',
@@ -96,7 +89,7 @@ def duration_days(row, prefix):
     except ValueError:
         return None
     unit = row.get(f'{prefix}relevant_duration_unit', '').strip()
-    factor = DURATION_TO_DAYS.get(unit)
+    factor = DURATION_UNIT_TO_DAYS.get(unit)
     if factor is None or value <= 0:
         return None
     return value * factor
