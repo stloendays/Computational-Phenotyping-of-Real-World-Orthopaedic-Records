@@ -1,0 +1,9 @@
+target_procedure,variable,procedure_positive,procedure_negative,effect_measure,effect_estimate,ci95,p_value,analysis_population
+chevron,age_years,"56.0 [39.0, 59.0]","59.0 [48.0, 65.0]",Mann-Whitney U,,,0.063,detailed notes; n=49 vs 65
+chevron,bmi_kg_m2,"23.8 [22.5, 26.0]","23.6 [21.5, 25.5]",Mann-Whitney U,,,0.284,detailed notes; n=49 vs 65
+chevron,female,42 (85.7%),55 (84.6%),odds ratio,1.09,0.38-3.11,1.000,detailed notes; n=49 vs 65
+chevron,bilateral_mention,34 (69.4%),29 (44.6%),odds ratio,2.81,1.29-6.14,0.013,detailed notes; n=49 vs 65
+fusion,age_years,"55.0 [51.0, 61.0]","56.5 [41.0, 63.8]",Mann-Whitney U,,,0.726,detailed notes; n=12 vs 102
+fusion,bmi_kg_m2,"23.5 [22.1, 25.3]","23.7 [22.0, 25.9]",Mann-Whitney U,,,0.686,detailed notes; n=12 vs 102
+fusion,female,11 (91.7%),86 (84.3%),odds ratio,suppressed,suppressed,suppressed,detailed notes; n=12 vs 102
+fusion,bilateral_mention,8 (66.7%),55 (53.9%),odds ratio,suppressed,suppressed,suppressed,detailed notes; n=12 vs 102
