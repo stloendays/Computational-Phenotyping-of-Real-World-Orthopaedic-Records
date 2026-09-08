@@ -39,7 +39,15 @@ Current deterministic counts:
 - established chronic/nonunion: 23;
 - comparison phenotype: 45.
 
-The comparison phenotype is not uniformly labelled acute because the fixed record does not prove acute status for every episode.
+The comparison phenotype is **not** uniformly labelled acute because the fixed record does not prove acute status for every episode.
+
+### Comparison-state audit
+
+A conservative deterministic audit of the 13 disease-concordant operative records in the comparison group found explicit acute/new or recent-injury wording in 7/13. The remaining records include postoperative-history wording, month/year duration wording without a chronic keyword, or insufficient explicit state evidence.
+
+This audit does not reclassify records. It establishes that the main comparison group must retain the neutral label `comparison phenotype` until physician adjudication.
+
+The aggregate audit is versioned in `data/aggregate/scaphoid_comparison_state_audit_v0_1.csv`.
 
 ## Operative analytic population
 
@@ -106,6 +114,8 @@ Bone-graft augmentation:
 - Fisher exact test;
 - crude odds ratio and 95% confidence interval in the internal/manuscript analysis.
 
+The primary comparison is `established chronic/nonunion` versus the full physician-adjudicated non-established comparison group, because this preserves the fixed-data cohort without post-hoc exclusion.
+
 ### Key contrast
 
 Internal fixation:
@@ -131,6 +141,7 @@ No model selection by P value is allowed.
 - missing detailed operative note ≠ no surgery;
 - detailed operative note for another anatomical problem ≠ target-disease surgery;
 - undocumented procedure component ≠ validated absence until physician review;
+- absence of an acute keyword ≠ chronic disease;
 - BMI is reported with its actual denominator.
 
 ## Physician validation gate
@@ -138,7 +149,7 @@ No model selection by P value is allowed.
 Final clinical estimates require physician adjudication of:
 
 1. wrist-scaphoid anatomy;
-2. chronic/nonunion state;
+2. clinical state using the prespecified categories `acute/new`, `established chronic`, `established nonunion`, `chronic/nonunion not distinguishable`, or `insufficient/uncertain`;
 3. operative-note target-disease relevance;
 4. internal fixation;
 5. bone graft;
@@ -154,11 +165,14 @@ Prespecified robustness checks are therefore:
 
 1. physician-adjudicated labels versus deterministic labels;
 2. exclusion of uncertain exposure or procedure relevance;
-3. primary bone-graft outcome versus broader augmentation composite;
-4. leave-one-out influence check for the primary 2×2 association;
-5. descriptive analysis after excluding records with competing same-admission orthopaedic procedures.
+3. **acute-only sensitivity analysis:** compare established chronic/nonunion records only with physician-confirmed `acute/new fracture` operative records; postoperative-history, long-duration-but-indeterminate and insufficient-state comparison records are excluded from this sensitivity analysis;
+4. primary bone-graft outcome versus broader augmentation composite;
+5. leave-one-out influence check for the primary 2×2 association;
+6. descriptive analysis after excluding records with competing same-admission orthopaedic procedures.
 
-These checks evaluate label and influence robustness rather than claiming an independent temporal validation cohort.
+The acute-only analysis is prespecified because the deterministic comparison-state audit showed that only 7/13 current comparison operative records carry explicit acute/recent-injury wording. It is not introduced in response to the final physician-labelled effect estimate.
+
+These checks evaluate state-definition, label and influence robustness rather than claiming an independent temporal validation cohort.
 
 ## Claim boundary
 
