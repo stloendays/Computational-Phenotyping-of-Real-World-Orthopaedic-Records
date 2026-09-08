@@ -1,0 +1,112 @@
+version: v0.1
+status: preregistration_draft
+source_scope: fixed_existing_records_only
+unit_of_annotation: admission_episode
+
+blinding:
+  reviewer_sees_model_predictions: false
+  reviewer_sees_rule_predictions: false
+  reviewer_sees_aggregate_results: false
+
+missingness_states:
+  - present
+  - absent
+  - undocumented
+  - uncertain
+
+layers:
+  disease_anatomy:
+    populations:
+      hallux_valgus_candidates: 200
+      scaphoid_candidates: 88
+      first_cmc_candidates: 79
+    labels:
+      hallux_valgus_status: [yes, no, uncertain]
+      scaphoid_anatomy: [wrist_scaphoid, foot_navicular, other, uncertain]
+      first_cmc_oa_status: [yes, no, uncertain]
+      first_cmc_competing_diagnoses:
+        type: multilabel
+        values:
+          - radiocarpal_arthritis
+          - ulnocarpal_arthritis
+          - rheumatoid_wrist
+          - gout_related_wrist
+          - traumatic_wrist_arthritis
+          - synovitis
+          - nonspecific_wrist_arthritis
+          - other
+
+  scaphoid_state:
+    population: strict_wrist_scaphoid
+    expected_n: 72
+    allowed_sources:
+      - diagnosis
+      - complaint
+      - physical_examination
+    prohibited_sources_for_state_assignment:
+      - operation_name
+      - operation_note
+    labels:
+      state:
+        - acute_or_new_fracture
+        - established_chronic_fracture
+        - established_nonunion
+        - chronic_nonunion_not_distinguishable
+        - insufficient_or_uncertain
+    binary_analysis_collapse:
+      established_chronic_or_nonunion:
+        - established_chronic_fracture
+        - established_nonunion
+        - chronic_nonunion_not_distinguishable
+
+  hallux_baseline:
+    labels:
+      laterality: [left, right, bilateral, unclear, undocumented]
+      bilateral_disease_mention: [present, absent, undocumented, uncertain]
+      deformity_angle:
+        type: numeric_optional
+        unit: degree
+      pain: [present, absent, undocumented, uncertain]
+      functional_limitation: [present, absent, undocumented, uncertain]
+
+  procedures:
+    hallux_valgus:
+      expected_detailed_notes: 114
+      type: multilabel
+      values: [osteotomy, chevron, akin, scarf, fusion, k_wire, resection, soft_tissue]
+    scaphoid:
+      expected_detailed_notes: 34
+      type: multilabel
+      values: [internal_fixation, bone_graft, reconstruction, fusion, hardware_removal, debridement]
+    first_cmc_oa:
+      expected_detailed_notes: 18
+      type: multilabel
+      values: [trapeziectomy, tendon_procedure, ligament_procedure, arthroplasty, fusion]
+
+provenance:
+  evidence_sources:
+    - diagnosis
+    - complaint
+    - physical_examination
+    - operation_name
+    - operation_note
+  evidence_excerpt_storage: private_only
+  reviewer_comment_storage: private_only
+
+double_review:
+  fraction: 0.20
+  method: deterministic_stratified_hash
+  seed: ORTHOPHENO-VAL-2026-09-v0.1
+  public_identifiers: false
+
+adjudication:
+  primary_annotation_locked_before_model_evaluation: true
+  disagreements: consensus_or_senior_reviewer
+  corrections_after_freeze_require_versioned_erratum: true
+
+public_release:
+  row_level_annotations: prohibited
+  admission_identifiers: prohibited
+  free_text: prohibited
+  aggregate_metrics_only: true
+  small_cell_threshold: 5
