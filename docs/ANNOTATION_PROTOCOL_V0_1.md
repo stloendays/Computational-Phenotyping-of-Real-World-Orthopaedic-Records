@@ -24,9 +24,11 @@ Review all candidate admission episodes:
 
 Total disease/anatomy adjudication workload: **367 admission episodes**.
 
+Under deterministic phenotype v0.3, the 88 scaphoid candidates are provisionally partitioned into **68 high-specificity wrist-scaphoid, 13 explicit foot-navicular and 7 ambiguous episodes**. Reviewers remain blinded to these predictions. The seven deterministic ambiguous records are retained specifically for physician adjudication rather than being forced into either anatomy class.
+
 ### Layer B - scaphoid clinical-state adjudication
 
-Review all **72 deterministic strict wrist-scaphoid episodes** using only non-operative clinical sources for the state label.
+Review all **68 deterministic strict wrist-scaphoid episodes** using only non-operative clinical sources for the state label.
 
 Primary state labels:
 
@@ -43,16 +45,16 @@ For the primary chronic/nonunion benchmark, `established chronic fracture`, `est
 Review every available detailed operative note within the strict disease cohorts:
 
 - hallux valgus: **114** notes;
-- wrist scaphoid: **34** notes;
+- wrist scaphoid: **31** notes;
 - first-CMC OA: **18** notes.
 
-Total detailed operative-note workload: **166 notes**.
+Total detailed operative-note workload: **163 notes**.
 
 Procedure labels are multi-label; multiple components may be present in one operation.
 
 ## 3. Blinding and sequence
 
-1. The annotation packet is generated from source records using the frozen sampling/export script.
+1. The annotation packet is generated from source records using the frozen local export script.
 2. Direct identifiers are removed or masked before review whenever the clinical workflow permits.
 3. Primary reviewers see source text only; they do not see rule outputs, model predictions, aggregate study results, or the other reviewer's labels.
 4. Primary annotation is completed and locked.
@@ -71,6 +73,10 @@ Each positive or uncertain label records the evidence source(s):
 - physical examination;
 - operation name;
 - detailed operative note.
+
+### Anatomy evidence for scaphoid adjudication
+
+The reviewer decides anatomy from the clinical meaning of the record, not from isolated characters. In particular, common words such as `手术` (operation) and `手法` (manual manoeuvre) do not constitute hand-anatomy evidence. An explicit phrase such as `左手舟骨` or a locally linked wrist-scaphoid description does constitute wrist evidence. Generic `舟骨` wording without sufficient anatomical support may be labelled uncertain.
 
 ### Source restriction for scaphoid chronic/nonunion state
 
@@ -125,13 +131,15 @@ A soft-tissue procedure includes explicit ligament, tendon, capsular or release 
 
 ### Anatomical phenotype
 
-`wrist_scaphoid` requires explicit wrist/hand scaphoid evidence or unambiguous scaphoid waist/pole context consistent with the wrist.
+`wrist_scaphoid` requires explicit wrist/hand scaphoid evidence, a locally linked wrist context, or an unambiguous scaphoid waist/pole description consistent with the wrist.
 
 `foot_navicular` is used for explicit foot/navicular context.
 
 `other` is used for a clearly different anatomical or diagnostic entity.
 
 `uncertain` is used when the Chinese term `舟骨` cannot be safely assigned to wrist or foot from the available record.
+
+A genuine multi-site trauma record may contain both foot-navicular and wrist-scaphoid injuries; in that situation the reviewer records the clinically explicit wrist-scaphoid phenotype rather than allowing the foot injury to erase it.
 
 ### Clinical state
 
@@ -205,6 +213,8 @@ Negated statements such as "未见骨不连" or "无明显疼痛" must not be tr
 ## 9. Double-review subset
 
 A second independent reviewer evaluates an approximately **20% deterministic stratified subset**. Selection is based on a fixed cryptographic hash of the local admission key and a frozen seed; the identifiers and selected texts remain in `annotations/private/` and are never committed.
+
+The current deterministic workload is recorded in `data/aggregate/annotation_workload_summary.csv`.
 
 Stratification ensures representation of:
 
