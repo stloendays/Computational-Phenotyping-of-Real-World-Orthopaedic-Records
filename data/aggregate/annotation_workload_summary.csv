@@ -1,0 +1,8 @@
+annotation_layer,domain,records_for_primary_review,records_for_double_review
+disease_anatomy,hallux_valgus,200,40
+disease_anatomy,scaphoid_fracture,88,18
+disease_anatomy,first_cmc_oa,79,16
+scaphoid_state,scaphoid_fracture,68,14
+procedure,hallux_valgus,114,23
+procedure,scaphoid_fracture,31,6
+procedure,first_cmc_oa,18,4
