@@ -1,0 +1,23 @@
+{
+  "manifest_version": "v0.1",
+  "purpose": "Freeze the Stage-1 scaphoid anatomy review input before physician annotation.",
+  "status": "pre-annotation input frozen",
+  "generator": "src/ortho_pheno/make_scaph_physician_packet_v0_1.py",
+  "generator_introduction_commit": "9f33065237a5b71dbf64dfbe5f1ab75a76b1b8e1",
+  "patient_level_files_publicly_released": false,
+  "pseudonym_salt_publicly_released": false,
+  "gold_nonblank_at_freeze": 0,
+  "files": {
+    "scaphoid_anatomy_review.csv": {
+      "row_count": 88,
+      "byte_size": 142132,
+      "sha256": "f84d4ad00e8fe43b928393d0289c15863a1da5e4c31c90c06274e57d44d27714"
+    },
+    "scaphoid_anatomy_double_review_manifest.csv": {
+      "row_count": 18,
+      "byte_size": 732,
+      "sha256": "717490798f00a8059d9a5c0cd4d86b321310e4986d4be32fb08c004d989e3103"
+    }
+  },
+  "interpretation": "The 88-record anatomy review population and the 18-record independent double-review subset were fixed while every anatomy gold label was blank. Any later change to the local review input invalidates these hashes and must be versioned explicitly."
+}
