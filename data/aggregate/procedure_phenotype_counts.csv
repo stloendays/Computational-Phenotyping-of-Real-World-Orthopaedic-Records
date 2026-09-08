@@ -12,8 +12,8 @@ first_cmc_oa,tendon_procedure,16,18,88.9
 first_cmc_oa,ligament_procedure,10,18,55.6
 first_cmc_oa,arthroplasty,5,18,27.8
 first_cmc_oa,fusion,<5,18,<5
-scaphoid_fracture,internal_fixation,31,34,91.2
-scaphoid_fracture,bone_graft,10,34,29.4
-scaphoid_fracture,fusion,<5,34,<5
-scaphoid_fracture,debridement,<5,34,<5
-scaphoid_fracture,hardware_removal,<5,34,<5
+scaphoid_fracture,internal_fixation,28,31,90.3
+scaphoid_fracture,bone_graft,10,31,32.3
+scaphoid_fracture,fusion,<5,31,<5
+scaphoid_fracture,debridement,<5,31,<5
+scaphoid_fracture,hardware_removal,<5,31,<5
