@@ -14,6 +14,12 @@ data/local/
 *.db
 *.sqlite
 
+# Third-party datasets: download locally; do not vendor data into this repository
+external_data/
+data/external/
+data/third_party/
+third_party/data/
+
 # Free-text exports and annotations containing PHI
 annotations/private/
 notes/private/
