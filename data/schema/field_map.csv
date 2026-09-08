@@ -1,0 +1,15 @@
+canonical_field,source_field,research_role,public_release
+admission_key,住院id / 住院流水号,linkage only,never public
+sex,性别,structured baseline,aggregate only
+age,年龄,structured baseline,aggregate only
+height,身高,structured baseline,aggregate only
+weight,体重,structured baseline,aggregate only
+admission_date,入院日期/入院时间,temporal alignment,year-level aggregate only
+discharge_date,出院日期/出院时间,temporal alignment,not public row-level
+main_diagnosis,主要诊断名称/描述,phenotype source,derived aggregate only
+other_diagnosis,其他诊断名称/描述,phenotype source,derived aggregate only
+complaint,主诉,NLP phenotype source,never public raw text
+physical_exam,专科查体,NLP phenotype source,never public raw text
+operation,手术名称/手术记录内容,procedure phenotype source,never public raw text
+exam_report,检查项目/所见/结果,exam phenotype source,never public raw text
+laboratory,项目/检验项目/结果,laboratory coverage,aggregate only
