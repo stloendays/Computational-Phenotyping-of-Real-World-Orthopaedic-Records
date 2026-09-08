@@ -1,157 +1,165 @@
 # Computational Phenotyping of Real-World Orthopaedic Records
 
-This repository is a reproducible clinical-informatics workspace for reconstructing patient-level orthopaedic phenotypes from heterogeneous Chinese EHR exports and studying real-world disease and treatment patterns.
+A reproducible clinical-informatics study for reconstructing admission-level orthopaedic phenotypes from heterogeneous Chinese EHR exports and analysing real-world disease and treatment patterns.
 
-## Current phase
+## Current status
 
-The project is in a **validation-first, fixed-data** phase. No additional local clinical data are assumed to become available. The first reproducible cohort audit and exploratory aggregate analysis are complete; the current locked milestone is physician validation of deterministic phenotypes before any LLM-assisted comparison.
+The project is in a **validation-first, fixed-data** phase. No additional local clinical data are assumed to become available.
 
-## Study domains
+Completed:
 
-| Domain | Candidate admissions | Deterministic strict phenotype | Primary role |
+- full 18-file source inventory;
+- admission-level reconstruction and deduplication;
+- phenotype rule audit through **v0.3**;
+- cohort audit v0.2;
+- calendar-era sensitivity analysis;
+- exploratory scaphoid and hallux treatment-pattern analyses;
+- synthetic regression tests and CI;
+- local-only physician annotation packet generator and annotation schema.
+
+Current locked milestone: **physician reference-standard annotation before any LLM-assisted extraction comparison**.
+
+## Current deterministic cohorts
+
+| Domain | Candidate admissions | Current deterministic phenotype | Primary role |
 |---|---:|---:|---|
-| Hallux valgus | 200 | 193 | Surgical-procedure phenotyping and treatment-pattern analysis |
-| Scaphoid fracture | 88 | 72 wrist-scaphoid cases | Established chronic/nonunion phenotype comparison |
-| First CMC osteoarthritis | 79 | 28 strict first-CMC cases | Anatomical/diagnostic disambiguation and cross-disease NLP validation |
+| Hallux valgus | 200 | **193** | Procedure phenotyping and treatment-pattern analysis |
+| Scaphoid retrieval | 88 | **68 wrist scaphoid** | Established chronic/nonunion phenotype comparison |
+| First CMC OA | 79 | **28** | Anatomical/diagnostic disambiguation benchmark |
 
-The current scaphoid v0.2 definition identifies **23 established chronic/nonunion phenotypes and 49 other strict wrist-scaphoid episodes**. Case status is assigned only from diagnosis, complaint and physical-examination text; operative text is excluded from case definition to avoid circularity when treatment is analysed downstream.
+### Scaphoid anatomy v0.3
 
-## Primary scientific questions
+The 88 scaphoid candidates are explicitly separated into:
 
-1. Can heterogeneous Chinese orthopaedic EHR exports be converted into an auditable patient-level research dataset without pseudoreplication?
-2. Can deterministic and LLM-assisted extraction systems recover clinically meaningful phenotypes from free text with physician-validated accuracy?
-3. Within the fixed scaphoid records, how do established chronic/nonunion phenotypes differ from other wrist-scaphoid phenotypes in treatment complexity?
-4. Can the same computational-phenotyping architecture generalize across deformity, trauma/nonunion and degenerative hand disease?
+- **68 wrist-scaphoid episodes (77.3%)**;
+- **13 explicit foot-navicular episodes (14.8%)**;
+- **7 ambiguous episodes (8.0%)** reserved for physician adjudication.
 
-## Completed cohort audit
+The earlier 72-case wrist-scaphoid count is **superseded**. Audit of discordant cases showed that the previous rule could treat non-anatomical Chinese words such as `手术` (operation) or `手法` (manual manoeuvre) as "hand" context. v0.3 replaces this shortcut with source-aware local anatomical evidence and an explicit ambiguous state.
 
-The audit demonstrates three important properties of the source data.
+Within the 68 high-specificity wrist-scaphoid episodes:
 
-### Repeated diagnosis rows are not independent observations
+- **23** have an established chronic/nonunion phenotype from diagnosis/complaint/examination text;
+- **45** form the other wrist-scaphoid comparison group.
 
-The diagnosis/demographics exports contain approximately **10.85, 12.40 and 13.40 rows per admission** for hallux valgus, first-CMC candidates and scaphoid candidates, respectively. All analyses therefore reconstruct admission-level episodes before inference.
+Operative text is not allowed to assign chronic/nonunion case status because operative treatment is analysed downstream.
 
-### Documentation architecture changes by calendar era
+## Why cohort reconstruction matters
 
-The supplied 2019-2022 exports retain complaint/examination records but lack operative-note, examination/imaging and laboratory modules for the hallux-valgus and scaphoid cohorts. The **2023-2025 era is therefore prespecified as the internally consistent sensitivity period** for scaphoid treatment comparisons.
+The demographics/diagnosis exports contain repeated rows for the same admission. Raw-row inflation is approximately:
 
-### Broad keyword retrieval has different specificity across diseases
+- hallux valgus: **10.85 rows/admission**;
+- first-CMC candidate retrieval: **12.40 rows/admission**;
+- scaphoid candidate retrieval: **13.40 rows/admission**.
 
-Hallux-valgus retrieval is highly specific under the current deterministic rules, whereas first-CMC retrieval is deliberately difficult: only 28 of 79 candidate episodes satisfy the strict first-CMC phenotype. Synovitis, generic wrist arthritis, rheumatoid/gout-related wrist disease and other competing terms occur among the non-strict candidates.
+Row-level inference would therefore create severe pseudoreplication. All analyses use reconstructed admission episodes.
 
-## First aggregate findings
+## Documentation-era shift
 
-These findings are exploratory until physician validation is complete.
+The supplied 2019-2022 exports retain complaint/examination records but lack detailed operative-note, examination/imaging and laboratory modules for the hallux-valgus and scaphoid cohorts. The **2023-2025 era is prespecified as the internally consistent sensitivity period** for scaphoid treatment comparisons.
 
-- Among 114 strict hallux-valgus episodes with detailed operative notes, osteotomy occurs in 93.0%, K-wire/steel-wire fixation in 90.4%, soft-tissue procedure terms in 97.4%, resection terms in 76.3%, Chevron in 43.0% and fusion in 10.5%.
-- The most common hallux procedure combination is `k_wire + osteotomy + resection + soft_tissue` (34.2%).
-- A preoperative bilateral-disease mention is more frequent in Chevron-positive than Chevron-negative hallux operative episodes (69.4% vs 44.6%; exploratory OR 2.81, 95% CI 1.29-6.14, Fisher p=0.013).
-- In the 2023-2025 scaphoid sensitivity cohort, age and BMI distributions are similar across phenotype groups; bone-grafting and broader complex-reconstruction markers are more frequent in the established chronic/nonunion group. Public inferential statistics are suppressed whenever exact small cells could be reconstructed.
+For the v0.3 strict scaphoid cohort:
 
-These are treatment-pattern associations, not treatment recommendations or causal estimates of incident nonunion.
+- 2015-2018: 15 episodes;
+- 2019-2022: 21 episodes;
+- 2023-2025: 32 episodes.
 
-## Data release and privacy boundary
+This prevents documentation-system changes from being misinterpreted as clinical effects.
 
-The supplied archive contains **18 hospital exports**: 12 `.xlsx` files covering demographics/diagnoses, complaints/examinations and surgery records, plus 6 legacy `.xls` workbooks containing examination/imaging reports and laboratory data.
+## Current exploratory findings
 
-Because the raw files contain direct identifiers and protected clinical text, **no raw, pseudonymized row-level or patient-level clinical data are committed to this public repository**. The `data/` directory contains only privacy-preserving aggregate artifacts, schema information and small-cell-suppressed summaries.
+These findings remain provisional until physician validation of the relevant text phenotypes.
 
-Public-release rules include:
+### Hallux valgus
 
-- non-zero cells smaller than 5 are displayed as `<5`;
-- inferential statistics are also suppressed when they could reveal a suppressed cell;
-- rare multi-label procedure combinations are pooled;
-- no patient-level dates, identifiers or free text are released.
+Among 114 detailed operative notes:
 
-## Key reproducible artifacts
+- osteotomy: **93.0%**;
+- K-wire/steel-wire fixation: **90.4%**;
+- soft-tissue procedure terms: **97.4%**;
+- resection terms: **76.3%**;
+- Chevron: **43.0%**;
+- fusion: **10.5%**.
 
-### Protocol and definitions
+The most common multi-label combination is `k_wire + osteotomy + resection + soft_tissue` (34.2%).
 
-- `docs/STUDY_PROTOCOL.md` - fixed-data research protocol;
+A preoperative bilateral-disease mention is more frequent in Chevron-positive than Chevron-negative episodes (69.4% vs 44.6%; exploratory OR 2.81, 95% CI 1.29-6.14, Fisher p=0.013). This is hypothesis-generating, not a causal treatment-selection claim.
+
+### Scaphoid
+
+In the 2023-2025 sensitivity cohort there are 18 established chronic/nonunion and 14 comparison episodes. Age and BMI distributions are similar. Among detailed operative notes, bone-grafting and broader complex-reconstruction markers remain more frequent in the established chronic/nonunion group; public inferential statistics are suppressed whenever a small cell could be reverse-engineered.
+
+This is a treatment-pattern comparison of an established phenotype, **not prediction of incident nonunion**.
+
+### First-CMC OA
+
+Only 28 of 79 broad candidates satisfy the strict first-CMC phenotype. Synovitis, generic wrist arthritis, rheumatoid/gout-related wrist disease and other competing terms occur among non-strict candidates, making this domain a useful hard-negative test for clinical NLP specificity.
+
+## Physician reference standard
+
+The current annotation plan uses only the existing records:
+
+- disease/anatomy adjudication: **367 candidate episodes**;
+- scaphoid-state adjudication: **68 strict wrist-scaphoid episodes**;
+- procedure adjudication: **163 detailed operative notes**;
+- approximately 20% deterministic stratified second review for inter-rater reliability.
+
+Private annotation packets, pseudonymous study IDs and clinical text remain in `annotations/private/` and are never committed.
+
+## Key files
+
+### Protocol and audit
+
+- `docs/STUDY_PROTOCOL.md` - formal fixed-data study protocol;
 - `docs/ANALYSIS_PLAN.md` - statistical/computational analysis plan;
-- `configs/phenotypes_v0.2.yaml` - frozen cohort-audit phenotype definitions;
-- `docs/PHENOTYPE_CHANGELOG.md` - versioned rationale for phenotype-rule changes;
-- `docs/COHORT_AUDIT_V0_1.md` - first cohort audit;
-- `results/INTERIM_FINDINGS_V0_1.md` - current aggregate findings.
+- `docs/COHORT_AUDIT_V0_2.md` - current cohort audit;
+- `docs/PHENOTYPE_CHANGELOG.md` - rule-version audit trail;
+- `docs/ANNOTATION_PROTOCOL_V0_1.md` - physician reference-standard protocol;
+- `configs/phenotypes_v0.3.yaml` - current deterministic phenotype definitions;
+- `configs/annotation_schema_v0.1.yaml` - annotation label schema;
+- `results/INTERIM_FINDINGS_V0_2.md` - current aggregate findings.
 
-### Data structure and aggregate results
+### Aggregate data
 
-- `data/schema/source_inventory.csv` - complete 18-file source inventory;
-- `data/schema/field_map.csv` - canonical field map and release policy;
-- `data/aggregate/cohort_overview.csv` - cohort size, demographics and data availability;
-- `data/aggregate/source_duplication_audit.csv` - row-inflation audit;
-- `data/aggregate/era_module_coverage.csv` - documentation coverage by era;
-- `data/aggregate/scaphoid_comparative_table.csv` - exploratory scaphoid comparison;
-- `data/aggregate/scaphoid_2023_2025_sensitivity.csv` - consistent-era sensitivity analysis;
-- `data/aggregate/hallux_procedure_combinations.csv` - common hallux procedure combinations;
-- `data/aggregate/hallux_treatment_pattern_contrasts.csv` - exploratory treatment-pattern contrasts;
-- `data/aggregate/first_cmc_disambiguation_audit.csv` - first-CMC specificity audit.
+- `data/aggregate/cohort_overview.csv`;
+- `data/aggregate/scaphoid_anatomy_audit.csv`;
+- `data/aggregate/source_duplication_audit.csv`;
+- `data/aggregate/era_module_coverage.csv`;
+- `data/aggregate/scaphoid_comparative_table.csv`;
+- `data/aggregate/scaphoid_2023_2025_sensitivity.csv`;
+- `data/aggregate/hallux_procedure_combinations.csv`;
+- `data/aggregate/hallux_treatment_pattern_contrasts.csv`;
+- `data/aggregate/first_cmc_disambiguation_audit.csv`;
+- `data/aggregate/annotation_workload_summary.csv`.
 
 ### Code and tests
 
-- `src/ortho_pheno/build_safe_release.py` - privacy-preserving cohort release builder;
-- `src/ortho_pheno/analysis_v0_1.py` - aggregate cohort audit and exploratory analysis;
-- `src/ortho_pheno/legacy_xls.py` - read-only legacy binary Excel parser;
-- `src/ortho_pheno/rules.py` - dependency-light deterministic phenotype rules;
-- `tests/test_phenotype_rules.py` - synthetic, non-PHI regression tests;
-- `.github/workflows/ci.yml` - automated rule tests.
+- `src/ortho_pheno/build_safe_release.py` - privacy-preserving aggregate builder;
+- `src/ortho_pheno/analysis_v0_1.py` - aggregate cohort analysis;
+- `src/ortho_pheno/rules.py` - deterministic phenotype rules;
+- `src/ortho_pheno/legacy_xls.py` - legacy binary Excel parser;
+- `src/ortho_pheno/make_annotation_packet.py` - local-only annotation packet generator;
+- `tests/test_phenotype_rules.py` - synthetic non-PHI regression tests;
+- `.github/workflows/ci.yml` - automated tests.
 
-## Study design
+## Privacy boundary
 
-The project combines:
+The original archive contains direct identifiers and protected clinical text. **No raw patient data, pseudonymized row-level data, admission identifiers, dates or free-text clinical notes are committed to this public repository.**
 
-- retrospective clinical informatics;
-- patient-level record linkage and temporal normalization;
-- clinical NLP / computational phenotyping;
-- a scaphoid established-phenotype comparison with calendar-era sensitivity analysis;
-- surgical procedure phenotyping in hallux valgus;
-- cross-disease diagnostic disambiguation using first-CMC osteoarthritis;
-- external public datasets for **methodological benchmarking or pretraining only**, never for pooling with local patients.
+Public outputs follow these rules:
+
+- non-zero cells smaller than 5 are shown as `<5`;
+- OR/CI/P values are also suppressed if they could reveal a small cell;
+- rare procedure combinations are pooled;
+- only aggregate or schema-level artifacts are released.
 
 ## Validation hierarchy
 
-The analysis follows a locked sequence:
-
-1. **deterministic rules and cohort audit** - complete for v0.2;
-2. **physician gold-standard annotation** - current milestone;
-3. regex/dictionary baseline evaluation on the frozen gold standard;
-4. LLM-assisted structured extraction on the same frozen evaluation set;
+1. deterministic cohort construction and anatomy audit - **complete through v0.3**;
+2. physician gold-standard annotation - **current milestone**;
+3. regex/dictionary baseline evaluation on the frozen reference standard;
+4. LLM-assisted structured extraction on the same locked labels;
 5. hybrid extraction and prespecified error analysis;
-6. manuscript-level claims only after validation and sensitivity checks.
+6. manuscript claims and figures generated only from versioned outputs.
 
-This ordering prevents the gold standard from being tuned to model outputs.
-
-## Repository principles
-
-- One admission episode is the primary statistical unit unless explicitly stated otherwise.
-- Every derived phenotype must be traceable to source fields/text and a versioned rule or model.
-- Outcome/exposure definitions are frozen before confirmatory analysis.
-- Missing text is not automatically interpreted as phenotype absence.
-- Small-sample inference is prioritized over high-capacity predictive modelling.
-- Public datasets develop or benchmark computational components; the fixed local dataset answers the clinical questions.
-- Rule changes prompted by leakage, ambiguity or data-generation artifacts are documented before re-analysis.
-
-## Repository structure
-
-```text
-configs/                 Frozen phenotype, cohort and annotation definitions
-data/                    Privacy-preserving aggregate release and schemas
-docs/                    Protocol, analysis plan, annotation protocol and governance
-src/ortho_pheno/         Cohort construction, phenotype extraction and evaluation code
-tests/                   Synthetic, non-PHI unit tests
-results/                 Derived aggregate analysis outputs only
-annotations/private/     Local-only physician annotation artifacts (gitignored)
-```
-
-## Current milestones
-
-- [x] Inventory the complete 18-file source archive.
-- [x] Reconstruct admission-level strict cohorts: 193 / 72 / 28.
-- [x] Freeze v0.2 anatomy and scaphoid source-scope rules.
-- [x] Complete cohort-audit v0.1 and calendar-era sensitivity analysis.
-- [x] Add synthetic phenotype-rule tests and CI.
-- [ ] Freeze physician annotation protocol and schema.
-- [ ] Complete physician gold-standard adjudication using existing records only.
-- [ ] Benchmark regex/dictionary extraction against the frozen gold standard.
-- [ ] Evaluate LLM-assisted and hybrid extraction without changing the gold-standard labels.
-- [ ] Generate manuscript figures/tables from versioned aggregate outputs.
+The study is intentionally designed so that the gold standard is not tuned to model behaviour.
