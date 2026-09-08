@@ -1,0 +1,9 @@
+target_procedure,variable,procedure_positive,procedure_negative,effect_measure,effect_estimate,ci95,p_value,analysis_population
+chevron,age_years,"56.0 [39.0, 59.0]","59.0 [47.2, 65.0]",Mann-Whitney U,,,0.053,disease-concordant notes; n=49 vs 64
+chevron,bmi_kg_m2,"23.8 [22.5, 26.0]","23.6 [21.5, 25.4]",Mann-Whitney U,,,0.249,disease-concordant notes; n=49 vs 64
+chevron,female,42 (85.7%),55 (85.9%),odds ratio,0.98,0.34-2.85,1.000,disease-concordant notes; n=49 vs 64
+chevron,bilateral_mention,34 (69.4%),29 (45.3%),odds ratio,2.74,1.25-5.98,0.013,disease-concordant notes; n=49 vs 64
+fusion,age_years,"55.0 [51.0, 61.0]","57.0 [40.0, 64.0]",Mann-Whitney U,,,0.751,disease-concordant notes; n=12 vs 101
+fusion,bmi_kg_m2,"23.5 [22.1, 25.3]","23.6 [22.0, 25.8]",Mann-Whitney U,,,0.711,disease-concordant notes; n=12 vs 101
+fusion,female,11 (91.7%),86 (85.1%),odds ratio,suppressed,suppressed,suppressed,disease-concordant notes; n=12 vs 101
+fusion,bilateral_mention,8 (66.7%),55 (54.5%),odds ratio,suppressed,suppressed,suppressed,disease-concordant notes; n=12 vs 101
