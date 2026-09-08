@@ -13,11 +13,20 @@ def write_csv(path, fields, row):
         w=csv.DictWriter(f,fieldnames=fields); w.writeheader(); w.writerow(row)
 
 
+DISEASE_FIELDS = [
+    'study_id','domain','gold_disease_anatomy_label',
+    'gold_hallux_laterality','gold_hallux_bilateral_disease_mention',
+    'gold_hallux_deformity_angle_deg','gold_hallux_pain','gold_hallux_functional_limitation',
+]
+
+
 class ReferenceFreezeTests(unittest.TestCase):
     def make_valid_gold(self,root):
-        write_csv(root/'disease_anatomy_annotation.csv',
-                  ['study_id','domain','gold_disease_anatomy_label'],
-                  {'study_id':'H1','domain':'hallux_valgus','gold_disease_anatomy_label':'yes'})
+        write_csv(root/'disease_anatomy_annotation.csv',DISEASE_FIELDS,
+                  {'study_id':'H1','domain':'hallux_valgus','gold_disease_anatomy_label':'yes',
+                   'gold_hallux_laterality':'bilateral','gold_hallux_bilateral_disease_mention':'present',
+                   'gold_hallux_deformity_angle_deg':'40','gold_hallux_pain':'present',
+                   'gold_hallux_functional_limitation':'undocumented'})
         write_csv(root/'scaphoid_state_annotation.csv',
                   ['study_id','gold_scaphoid_state'],
                   {'study_id':'S1','gold_scaphoid_state':'established_nonunion'})
@@ -52,6 +61,17 @@ class ReferenceFreezeTests(unittest.TestCase):
             write_csv(root/'procedure_annotation.csv',
                       ['study_id','domain','gold_target_disease_procedure_present','gold_procedure_labels'],
                       {'study_id':'H1','domain':'hallux_valgus','gold_target_disease_procedure_present':'no','gold_procedure_labels':'osteotomy'})
+            with self.assertRaises(ValueError):
+                build_manifest(root)
+
+    def test_confirmed_hallux_case_requires_baseline_states(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td); self.make_valid_gold(root)
+            write_csv(root/'disease_anatomy_annotation.csv',DISEASE_FIELDS,
+                      {'study_id':'H1','domain':'hallux_valgus','gold_disease_anatomy_label':'yes',
+                       'gold_hallux_laterality':'','gold_hallux_bilateral_disease_mention':'',
+                       'gold_hallux_deformity_angle_deg':'','gold_hallux_pain':'',
+                       'gold_hallux_functional_limitation':''})
             with self.assertRaises(ValueError):
                 build_manifest(root)
 
