@@ -1,0 +1,50 @@
+{
+  "manifest_version": "v0.1",
+  "status": "pre_gold_frozen_inputs",
+  "gold_dependency": "none",
+  "privacy_scope": "public_aggregate_inputs_only",
+  "phenotype_dependency": "phenotypes_v0.3",
+  "procedure_context_dependency": "procedure-context audit v0.1",
+  "generator": {
+    "path": "src/ortho_pheno/build_manuscript_assets_v0_1.py",
+    "git_blob_sha": "3d7a3d5eb9b785e077ea1d295536067c1b9f214c"
+  },
+  "inputs": {
+    "data/aggregate/cohort_overview.csv": "c5ab5ba02caa829df912040dfd10d7e3c6e432e9",
+    "data/aggregate/source_duplication_audit.csv": "b74fe2ee155936d3d63400847ba9664f7928e439",
+    "data/aggregate/scaphoid_anatomy_audit.csv": "fbdffac995a23cb9ab1b655f964b581f1afb35d8",
+    "data/aggregate/scaphoid_rule_version_transition.csv": "d4ddd61342b4bb217ef9b17ad8e4e6b05c32f9b1",
+    "data/aggregate/procedure_note_relevance_audit.csv": "b8b2a305a0a61722462a0f39be1f54ed98b775f5"
+  },
+  "outputs": [
+    "figures/pre_gold/Figure1_validation_first_framework.svg",
+    "figures/pre_gold/Figure2_cohort_reconstruction.svg",
+    "figures/pre_gold/Figure3_procedure_attribution.svg",
+    "results/tables/TABLE1_SOURCE_ARCHITECTURE_V0_1.csv",
+    "results/tables/TABLE1_SOURCE_ARCHITECTURE_V0_1.md",
+    "docs/FIGURE_CAPTIONS_V0_1.md"
+  ],
+  "frozen_audit_values": {
+    "strict_cohorts": {
+      "hallux_valgus": 193,
+      "wrist_scaphoid": 68,
+      "first_cmc_oa": 28
+    },
+    "scaphoid_anatomy": {
+      "wrist_scaphoid": 68,
+      "foot_navicular": 13,
+      "ambiguous": 7
+    },
+    "scaphoid_rule_transition": {
+      "previous_wrist_selection": 72,
+      "retained_wrist": 68,
+      "removed_as_foot_navicular": 4,
+      "new_wrist_additions": 0
+    },
+    "procedure_note_relevance": {
+      "hallux_valgus": "114->113",
+      "scaphoid_fracture": "31->28",
+      "first_cmc_oa": "18->18"
+    }
+  }
+}
