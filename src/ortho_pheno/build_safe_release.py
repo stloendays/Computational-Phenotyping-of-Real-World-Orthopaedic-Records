@@ -1,244 +1,222 @@
 #!/usr/bin/env python3
-"""Generate public aggregate artifacts from the local 18-file clinical archive.
+"""Build privacy-preserving aggregate research artifacts from local orthopaedic exports.
 
-The script NEVER writes patient-level rows, identifiers, raw notes, raw reports,
-or raw laboratory records. Raw files remain local and are only read in memory.
+IMPORTANT: this script reads raw local clinical files but writes aggregate outputs only.
+It intentionally never writes patient-level rows, direct identifiers, free-text notes, or dates.
 """
-
-from collections import Counter, defaultdict
-from datetime import datetime
 from pathlib import Path
-import csv
-import math
-import re
-import statistics
-import sys
-
+from collections import defaultdict, Counter
+from datetime import datetime, timedelta
+import csv, math, re, statistics, sys
 from openpyxl import load_workbook
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from legacy_xls import parse_biff
+from rules import is_hallux_valgus, is_first_cmc_oa, is_wrist_scaphoid, SCAPHOID_CHRONIC_RE
 
+DIRECT_IDS = {'姓名','住院id','住院流水号','住院号','病案号','电话','联系人电话','就诊卡号','申请单ID'}
 DISEASES = {
-    "hallux_valgus": "拇外翻",
-    "first_cmc_oa": "腕掌关节炎",
-    "scaphoid_fracture": "舟骨骨折",
-}
-DIRECT_IDS = {"姓名", "住院id", "住院流水号", "住院号", "病案号", "电话", "联系人电话", "就诊卡号", "申请单ID"}
-STRICT = {
-    "hallux_valgus": re.compile(r"拇外翻|踇外翻|足母.?外翻|拇囊炎|踇囊炎|足母.?囊炎|(?:拇|踇)趾外翻|第一足趾外翻"),
-    "first_cmc_oa": re.compile(r"第一腕掌关节|第[一1]腕掌关节|拇指腕掌关节|拇指.?CMC|大多角骨.*(?:关节|切除)"),
-    "scaphoid_fracture": re.compile(r"(?:左|右|双)?腕.{0,6}舟骨|(?:左|右|双)?手.{0,6}舟骨|舟骨.{0,8}(?:腕|手)"),
-}
-CHRONIC = re.compile(r"骨不连|不连接|不愈合|陈旧|SNAC")
-PROCEDURES = {
-    "hallux_valgus": {"osteotomy": r"截骨", "chevron": r"Chevron", "akin": r"Akin", "scarf": r"Scarf", "fusion": r"融合", "k_wire": r"克氏针|钢针", "soft_tissue": r"肌腱|韧带|关节囊|松解", "resection": r"切除"},
-    "first_cmc_oa": {"trapeziectomy": r"大多角骨.*切除|切除.*大多角骨", "tendon_procedure": r"肌腱", "ligament_procedure": r"韧带", "arthroplasty": r"关节成形|关节置换", "fusion": r"融合"},
-    "scaphoid_fracture": {"internal_fixation": r"内固定|螺钉|空心钉|钢针", "bone_graft": r"植骨|取骨", "fusion": r"融合", "debridement": r"清创|病灶清除", "hardware_removal": r"取出内固定|内固定.*去除"},
+    'hallux_valgus': '拇外翻',
+    'first_cmc_oa': '腕掌关节炎',
+    'scaphoid_fracture': '舟骨骨折',
 }
 
+PROC_PATTERNS = {
+    'hallux_valgus': {
+        'osteotomy': r'截骨', 'chevron': r'Chevron|chevron', 'akin': r'Akin|AKIN|akin',
+        'scarf': r'Scarf|SCARF|scarf', 'fusion': r'融合', 'k_wire': r'克氏针|钢针',
+        'soft_tissue': r'肌腱|韧带|关节囊|松解', 'resection': r'切除',
+    },
+    'first_cmc_oa': {
+        'trapeziectomy': r'大多角骨.*切除|切除.*大多角骨', 'tendon_procedure': r'肌腱',
+        'ligament_procedure': r'韧带', 'arthroplasty': r'关节成形|关节置换', 'fusion': r'融合',
+    },
+    'scaphoid_fracture': {
+        'internal_fixation': r'内固定|螺钉|空心钉|钢针', 'bone_graft': r'植骨|取骨',
+        'fusion': r'融合', 'debridement': r'清创|病灶清除', 'hardware_removal': r'取出内固定|内固定.*去除',
+    },
+}
 
-def norm_id(value):
-    if value is None:
-        return None
-    text = str(value).strip()
-    if text.endswith(".0") and text[:-2].isdigit():
-        text = text[:-2]
-    return text or None
+def norm_id(v):
+    if v is None: return None
+    s=str(v).strip()
+    if s.endswith('.0') and s[:-2].isdigit(): s=s[:-2]
+    return s or None
 
-
-def disease_from_filename(name):
-    for key, label in DISEASES.items():
-        if label in name or name.startswith(label.replace("患者", "")):
-            return key
-    if name.startswith("拇外翻"):
-        return "hallux_valgus"
-    if name.startswith("腕掌关节炎"):
-        return "first_cmc_oa"
-    if name.startswith("舟骨骨折"):
-        return "scaphoid_fracture"
-    return "unknown"
-
-
-def module_from_filename(name):
-    if name.endswith("检查.xls"):
-        return "imaging_exam"
-    if name.endswith("检验.xls"):
-        return "laboratory"
-    if "主诉和专科查体" in name:
-        return "complaint_exam"
-    if "基本信息和诊断信息" in name:
-        return "demographics_diagnoses"
-    if "能查到手术内容" in name:
-        return "detailed_operating_note"
-    if "无法查询手术内容" in name or "能无法查询手术内容" in name:
-        return "surgery_name_only"
-    return "other"
-
-
-def iter_xlsx(path):
-    wb = load_workbook(path, read_only=True, data_only=True)
-    for ws in wb.worksheets:
-        headers = [str(ws.cell(1, c).value).strip() if ws.cell(1, c).value is not None else "" for c in range(1, ws.max_column + 1)]
-        rows = []
-        for values in ws.iter_rows(min_row=2, values_only=True):
-            rows.append({headers[i]: values[i] for i in range(len(headers)) if headers[i]})
-        yield ws.title, headers, rows
-
-
-def as_datetime(value):
-    if isinstance(value, datetime):
-        return value
+def excel_dt(v):
+    if isinstance(v, datetime): return v
+    if isinstance(v, (int,float)) and not isinstance(v,bool):
+        try: return datetime(1899,12,30)+timedelta(days=float(v))
+        except Exception: return None
+    if isinstance(v,str):
+        s=v.strip()
+        for fmt in ('%Y-%m-%d %H:%M:%S','%Y-%m-%d','%Y/%m/%d %H:%M:%S','%Y/%m/%d'):
+            try: return datetime.strptime(s,fmt)
+            except Exception: pass
     return None
 
+def read_xlsx(path):
+    wb=load_workbook(path, read_only=True, data_only=True)
+    for ws in wb.worksheets:
+        headers=[str(ws.cell(1,c).value).strip() if ws.cell(1,c).value is not None else '' for c in range(1,ws.max_column+1)]
+        rows=[]
+        for vals in ws.iter_rows(min_row=2,values_only=True):
+            rows.append({headers[i]:vals[i] for i in range(len(headers)) if headers[i]})
+        yield ws.title, headers, rows
 
-def percentile(values, p):
-    values = sorted(values)
-    if not values:
-        return None
-    x = (len(values) - 1) * p
-    lo, hi = math.floor(x), math.ceil(x)
-    return values[lo] if lo == hi else values[lo] + (values[hi] - values[lo]) * (x - lo)
+def classify_file(name):
+    if name.endswith('检查.xls'): return 'imaging_exam'
+    if name.endswith('检验.xls'): return 'laboratory'
+    if '主诉和专科查体' in name: return 'complaint_exam'
+    if '基本信息和诊断信息' in name: return 'demographics_diagnoses'
+    if '能查到手术内容' in name: return 'detailed_operating_note'
+    if '无法查询手术内容' in name or '能无法查询手术内容' in name: return 'surgery_name_only'
+    return 'other'
 
+def disease_key_from_name(name):
+    for k,zh in DISEASES.items():
+        if zh in name or (k=='hallux_valgus' and name.startswith('拇外翻')) or (k=='first_cmc_oa' and name.startswith('腕掌关节炎')) or (k=='scaphoid_fracture' and name.startswith('舟骨骨折')):
+            return k
+    return 'unknown'
 
-def suppress(n):
-    return "<5" if 0 < n < 5 else str(n)
+def qtile(vals,p):
+    vals=sorted(float(x) for x in vals if x is not None and not math.isnan(float(x)))
+    if not vals:return None
+    pos=(len(vals)-1)*p; lo=math.floor(pos); hi=math.ceil(pos)
+    return vals[lo] if lo==hi else vals[lo]+(vals[hi]-vals[lo])*(pos-lo)
 
-
-def write_csv(path, rows, columns):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=columns)
-        writer.writeheader()
-        writer.writerows(rows)
-
+def fmt(v, nd=1): return '' if v is None else f'{v:.{nd}f}'
+def suppress(n): return '<5' if isinstance(n,int) and 0<n<5 else str(n)
 
 def build(raw_dir, out_dir):
-    raw_dir, out_dir = Path(raw_dir), Path(out_dir)
-    records = {key: defaultdict(lambda: {"text": [], "sex": None, "age": None, "height": None, "weight": None, "admit": None, "complaint": False, "exam": False, "surgery": False, "detail": False, "surgery_text": []}) for key in DISEASES}
-    inventory = []
-
-    for path in sorted(raw_dir.glob("*.xlsx")):
-        disease, module = disease_from_filename(path.name), module_from_filename(path.name)
-        sheets, nrows, fields, ids = [], 0, set(), set()
-        for sheet, headers, rows in iter_xlsx(path):
-            sheets.append(sheet); nrows += len(rows); fields.update(headers)
-            for row in rows:
-                pid = norm_id(row.get("住院id"))
-                if pid:
-                    ids.add(pid)
-                if disease == "unknown" or not pid:
-                    continue
-                rec = records[disease][pid]
-                for key, value in row.items():
-                    if key not in DIRECT_IDS and isinstance(value, str) and value.strip():
-                        rec["text"].append(value.strip())
-                rec["sex"] = rec["sex"] or row.get("性别")
-                rec["age"] = rec["age"] if rec["age"] is not None else row.get("年龄")
-                rec["height"] = rec["height"] if rec["height"] is not None else row.get("身高")
-                rec["weight"] = rec["weight"] if rec["weight"] is not None else row.get("体重")
-                for col in ("入院日期", "入院时间"):
-                    dt = as_datetime(row.get(col))
-                    if dt and (rec["admit"] is None or dt < rec["admit"]):
-                        rec["admit"] = dt
-                rec["complaint"] |= bool(row.get("主诉"))
-                rec["exam"] |= bool(row.get("专科查体"))
-                rec["surgery"] |= bool(row.get("手术时间") or row.get("手术名称") or row.get("手术记录内容"))
-                if row.get("手术记录内容"):
-                    rec["detail"] = True
-                    rec["surgery_text"].append(str(row["手术记录内容"]))
-                if row.get("手术名称"):
-                    rec["surgery_text"].append(str(row["手术名称"]))
-        inventory.append({"disease": disease, "module": module, "source_file": path.name, "format": "xlsx", "sheets": "|".join(sheets), "data_rows": nrows, "columns": len(fields), "unique_admission_keys": len(ids), "contains_direct_identifiers": "yes", "public_release": "no"})
-
-    strict = {disease: {pid for pid, rec in recs.items() if STRICT[disease].search(" ".join(rec["text"]))} for disease, recs in records.items()}
-    exam_coverage = {key: set() for key in DISEASES}
-    lab_coverage = {key: defaultdict(set) for key in DISEASES}
-
-    for path in sorted(raw_dir.glob("*.xls")):
-        disease, module = disease_from_filename(path.name), module_from_filename(path.name)
-        parsed = parse_biff(path)
-        sheets, nrows, ncols, ids = [], 0, 0, set()
-        for sheet, rows in parsed.items():
-            sheets.append(sheet); nrows += max(0, len(rows) - 1); ncols = max(ncols, len(rows[0]) if rows else 0)
-            if not rows or "住院流水号" not in rows[0]:
-                continue
-            idx = rows[0].index("住院流水号")
+    raw_dir=Path(raw_dir); out_dir=Path(out_dir); (out_dir/'data/aggregate').mkdir(parents=True,exist_ok=True); (out_dir/'data/schema').mkdir(parents=True,exist_ok=True)
+    inventory=[]; recs={k:defaultdict(lambda:{'texts':[],'clinical_texts':[],'sex':None,'age':None,'height':None,'weight':None,'admit':None,'discharge':None,'complaint':False,'exam':False,'surgery_any':False,'surgery_detail':False,'surgery_texts':[]}) for k in DISEASES}
+    # xlsx
+    for p in sorted(raw_dir.glob('*.xlsx')):
+        dk=disease_key_from_name(p.name); module=classify_file(p.name); sheets=[]; total_rows=0; fields=set(); ids=set()
+        for s,h,rows in read_xlsx(p):
+            sheets.append(s); total_rows += len(rows); fields.update(h)
+            for d in rows:
+                pid=norm_id(d.get('住院id'))
+                if pid: ids.add(pid)
+                if dk=='unknown' or not pid: continue
+                r=recs[dk][pid]
+                for key,val in d.items():
+                    if val is None or key in DIRECT_IDS: continue
+                    if isinstance(val,str) and val.strip(): r['texts'].append(val.strip())
+                for key in ('主要诊断名称','主要诊断描述','其他诊断名称','其他诊断描述','主诉','专科查体'):
+                    val=d.get(key)
+                    if isinstance(val,str) and val.strip(): r['clinical_texts'].append(val.strip())
+                r['sex']=r['sex'] or d.get('性别'); r['age']=r['age'] if r['age'] is not None else d.get('年龄'); r['height']=r['height'] if r['height'] is not None else d.get('身高'); r['weight']=r['weight'] if r['weight'] is not None else d.get('体重')
+                for key in ('入院日期','入院时间'):
+                    dt=excel_dt(d.get(key));
+                    if dt and (r['admit'] is None or dt<r['admit']): r['admit']=dt
+                for key in ('出院日期','出院时间'):
+                    dt=excel_dt(d.get(key));
+                    if dt and (r['discharge'] is None or dt>r['discharge']): r['discharge']=dt
+                if d.get('主诉'): r['complaint']=True
+                if d.get('专科查体'): r['exam']=True
+                if d.get('手术时间') or d.get('手术名称') or d.get('手术记录内容'): r['surgery_any']=True
+                if d.get('手术记录内容'):
+                    r['surgery_detail']=True; r['surgery_texts'].append(str(d.get('手术记录内容')))
+                if d.get('手术名称'): r['surgery_texts'].append(str(d.get('手术名称')))
+        inventory.append({'disease':dk,'module':module,'source_file':p.name,'format':'xlsx','sheets':'|'.join(sheets),'data_rows':total_rows,'columns':len(fields),'unique_admission_keys':len(ids),'contains_direct_identifiers':'yes','public_release':'no'})
+    # strict sets
+    strict={}
+    for dk,rs in recs.items():
+        s=set()
+        for pid,r in rs.items():
+            t=' '.join(r['texts'])
+            if dk=='hallux_valgus' and is_hallux_valgus(t): s.add(pid)
+            elif dk=='first_cmc_oa' and is_first_cmc_oa(t): s.add(pid)
+            elif dk=='scaphoid_fracture' and is_wrist_scaphoid(t): s.add(pid)
+        strict[dk]=s
+    # legacy xls inventory + coverage sets
+    lab_cov={k:defaultdict(set) for k in DISEASES}; exam_cov={k:set() for k in DISEASES}
+    for p in sorted(raw_dir.glob('*.xls')):
+        dk=disease_key_from_name(p.name); module=classify_file(p.name); data=parse_biff(p); sheets=[]; total_rows=0; colmax=0; ids=set()
+        for s,rows in data.items():
+            sheets.append(s); total_rows += max(0,len(rows)-1); colmax=max(colmax,len(rows[0]) if rows else 0)
+            if not rows: continue
+            h=rows[0]; idx={x:i for i,x in enumerate(h)}
+            idc=idx.get('住院流水号')
             for row in rows[1:]:
-                pid = norm_id(row[idx]) if idx < len(row) else None
-                if not pid:
-                    continue
+                pid=norm_id(row[idc]) if idc is not None and idc<len(row) else None
+                if not pid: continue
                 ids.add(pid)
-                if module == "imaging_exam":
-                    exam_coverage[disease].add(pid)
-                elif module == "laboratory":
-                    if "凝血" in sheet: category = "coagulation"
-                    elif "血常规" in sheet: category = "cbc"
-                    elif "红细胞沉" in sheet: category = "esr"
-                    elif "C反应蛋白" in sheet: category = "crp"
-                    elif "肝功" in sheet: category = "liver_function"
-                    elif "肾功" in sheet: category = "kidney_function"
-                    elif "离子" in sheet: category = "electrolytes"
-                    else: category = "other"
-                    lab_coverage[disease][category].add(pid)
-        inventory.append({"disease": disease, "module": module, "source_file": path.name, "format": "xls", "sheets": "|".join(sheets), "data_rows": nrows, "columns": ncols, "unique_admission_keys": len(ids), "contains_direct_identifiers": "yes", "public_release": "no"})
-
-    write_csv(out_dir / "data/schema/source_inventory.csv", inventory, list(inventory[0]))
-
-    overview = []
-    for disease, recs in records.items():
-        ids = strict[disease]
-        ages, bmis, female, sex_n = [], [], 0, 0
-        for pid in ids:
-            rec = recs[pid]
+                if module=='imaging_exam': exam_cov[dk].add(pid)
+                elif module=='laboratory':
+                    if '凝血' in s: cat='coagulation'
+                    elif '血常规' in s: cat='cbc'
+                    elif '红细胞沉' in s: cat='esr'
+                    elif 'C反应蛋白' in s: cat='crp'
+                    elif '肝功' in s: cat='liver_function'
+                    elif '肾功' in s: cat='kidney_function'
+                    elif '离子' in s: cat='electrolytes'
+                    else: cat='other'
+                    lab_cov[dk][cat].add(pid)
+        inventory.append({'disease':dk,'module':module,'source_file':p.name,'format':'xls','sheets':'|'.join(sheets),'data_rows':total_rows,'columns':colmax,'unique_admission_keys':len(ids),'contains_direct_identifiers':'yes','public_release':'no'})
+    # inventory CSV
+    fields=['disease','module','source_file','format','sheets','data_rows','columns','unique_admission_keys','contains_direct_identifiers','public_release']
+    with open(out_dir/'data/schema/source_inventory.csv','w',encoding='utf-8-sig',newline='') as f:
+        w=csv.DictWriter(f,fieldnames=fields); w.writeheader(); w.writerows(inventory)
+    # field map
+    fmap=[
+        ('admission_key','住院id / 住院流水号','linkage only','never public'),('sex','性别','structured baseline','aggregate only'),('age','年龄','structured baseline','aggregate only'),('height','身高','structured baseline','aggregate only'),('weight','体重','structured baseline','aggregate only'),('admission_date','入院日期/入院时间','temporal alignment','year-level aggregate only'),('discharge_date','出院日期/出院时间','temporal alignment','not public row-level'),('main_diagnosis','主要诊断名称/描述','phenotype source','derived aggregate only'),('other_diagnosis','其他诊断名称/描述','phenotype source','derived aggregate only'),('complaint','主诉','NLP phenotype source','never public raw text'),('physical_exam','专科查体','NLP phenotype source','never public raw text'),('operation','手术名称/手术记录内容','procedure phenotype source','never public raw text'),('exam_report','检查项目/所见/结果','exam phenotype source','never public raw text'),('laboratory','项目/检验项目/结果','laboratory coverage','aggregate only')]
+    with open(out_dir/'data/schema/field_map.csv','w',encoding='utf-8-sig',newline='') as f:
+        w=csv.writer(f); w.writerow(['canonical_field','source_field','research_role','public_release']); w.writerows(fmap)
+    # cohort overview
+    rows=[]
+    for dk,zh in DISEASES.items():
+        rs=recs[dk]; ss=strict[dk]; ages=[]; female=0; sexn=0; bmis=[]
+        for pid in ss:
+            r=rs[pid]
             try:
-                age = float(rec["age"])
-                if 0 < age < 120: ages.append(age)
+                a=float(r['age']);
+                if 0<a<120: ages.append(a)
             except Exception: pass
-            if rec["sex"] is not None:
-                sex_n += 1; female += str(rec["sex"]).strip() in {"女", "女性", "F", "Female"}
+            if r['sex'] is not None:
+                sexn+=1; female += 1 if str(r['sex']).strip() in ('女','女性','F','Female') else 0
             try:
-                height, weight = float(rec["height"]), float(rec["weight"])
-                if height > 3: height /= 100
-                bmi = weight / (height * height)
-                if 10 < bmi < 60: bmis.append(bmi)
+                h=float(r['height']); w=float(r['weight']);
+                if h>3: h/=100
+                bmi=w/(h*h)
+                if 10<bmi<60:bmis.append(bmi)
             except Exception: pass
-        overview.append({
-            "disease": disease, "candidate_admissions": len(recs), "strict_phenotype_admissions": len(ids),
-            "female_percent": f"{100*female/sex_n:.1f}" if sex_n else "", "age_median": f"{statistics.median(ages):.1f}" if ages else "", "age_q1": f"{percentile(ages,.25):.1f}" if ages else "", "age_q3": f"{percentile(ages,.75):.1f}" if ages else "", "bmi_median": f"{statistics.median(bmis):.1f}" if bmis else "",
-            "with_complaint": sum(recs[pid]["complaint"] for pid in ids), "with_physical_exam": sum(recs[pid]["exam"] for pid in ids), "with_any_surgery_record": sum(recs[pid]["surgery"] for pid in ids), "with_detailed_operating_note": sum(recs[pid]["detail"] for pid in ids), "with_any_exam_record": len(ids & exam_coverage[disease]),
-            "with_cbc": len(ids & lab_coverage[disease]["cbc"]), "with_coagulation": len(ids & lab_coverage[disease]["coagulation"]), "with_esr": len(ids & lab_coverage[disease]["esr"]), "with_crp": len(ids & lab_coverage[disease]["crp"]), "with_liver_function": len(ids & lab_coverage[disease]["liver_function"]), "with_kidney_function": len(ids & lab_coverage[disease]["kidney_function"]), "with_electrolytes": len(ids & lab_coverage[disease]["electrolytes"]),
+        rows.append({
+            'disease':dk,'candidate_admissions':len(rs),'strict_phenotype_admissions':len(ss),
+            'female_percent':fmt(100*female/sexn if sexn else None),'age_median':fmt(statistics.median(ages) if ages else None),'age_q1':fmt(qtile(ages,.25)),'age_q3':fmt(qtile(ages,.75)),'bmi_median':fmt(statistics.median(bmis) if bmis else None),
+            'with_complaint':sum(rs[p]['complaint'] for p in ss),'with_physical_exam':sum(rs[p]['exam'] for p in ss),'with_any_surgery_record':sum(rs[p]['surgery_any'] for p in ss),'with_detailed_operating_note':sum(rs[p]['surgery_detail'] for p in ss),
+            'with_any_exam_record':len(ss & exam_cov[dk]),'with_cbc':len(ss & lab_cov[dk]['cbc']),'with_coagulation':len(ss & lab_cov[dk]['coagulation']),'with_esr':len(ss & lab_cov[dk]['esr']),'with_crp':len(ss & lab_cov[dk]['crp']),'with_liver_function':len(ss & lab_cov[dk]['liver_function']),'with_kidney_function':len(ss & lab_cov[dk]['kidney_function']),'with_electrolytes':len(ss & lab_cov[dk]['electrolytes'])
         })
-    write_csv(out_dir / "data/aggregate/cohort_overview.csv", overview, list(overview[0]))
+    of=list(rows[0].keys())
+    with open(out_dir/'data/aggregate/cohort_overview.csv','w',encoding='utf-8-sig',newline='') as f:
+        w=csv.DictWriter(f,fieldnames=of); w.writeheader(); w.writerows(rows)
+    # years, suppressed
+    yrs=[]
+    for dk in DISEASES:
+        c=Counter(recs[dk][p]['admit'].year for p in strict[dk] if recs[dk][p]['admit'])
+        for y in range(2015,2026): yrs.append({'disease':dk,'year':y,'strict_admissions':suppress(c.get(y,0))})
+    with open(out_dir/'data/aggregate/year_distribution.csv','w',encoding='utf-8-sig',newline='') as f:
+        w=csv.DictWriter(f,fieldnames=['disease','year','strict_admissions']); w.writeheader(); w.writerows(yrs)
+    # procedure counts among strict cases with detailed note
+    proc=[]
+    for dk,pats in PROC_PATTERNS.items():
+        denom=sum(recs[dk][p]['surgery_detail'] for p in strict[dk])
+        for label,pat in pats.items():
+            n=0
+            rg=re.compile(pat,re.I)
+            for pid in strict[dk]:
+                if recs[dk][pid]['surgery_detail'] and rg.search(' '.join(recs[dk][pid]['surgery_texts'])): n+=1
+            proc.append({'disease':dk,'procedure_phenotype':label,'n':suppress(n),'denominator_detailed_notes':denom,'percent':('<5' if 0<n<5 else fmt(100*n/denom if denom else None))})
+    with open(out_dir/'data/aggregate/procedure_phenotype_counts.csv','w',encoding='utf-8-sig',newline='') as f:
+        w=csv.DictWriter(f,fieldnames=['disease','procedure_phenotype','n','denominator_detailed_notes','percent']); w.writeheader(); w.writerows(proc)
+    # scaphoid chronic phenotype aggregate: non-operative clinical text only
+    chronic=sum(1 for pid in strict['scaphoid_fracture'] if SCAPHOID_CHRONIC_RE.search(' '.join(recs['scaphoid_fracture'][pid]['clinical_texts'])))
+    other=len(strict['scaphoid_fracture'])-chronic
+    with open(out_dir/'data/aggregate/scaphoid_phenotype_groups.csv','w',encoding='utf-8-sig',newline='') as f:
+        w=csv.writer(f); w.writerow(['phenotype_group','n','interpretation']); w.writerow(['established_chronic_or_nonunion',chronic,'Text-supported established chronic/nonunion phenotype defined from non-operative clinical text; not necessarily incident nonunion observed longitudinally.']); w.writerow(['other_wrist_scaphoid',other,'Wrist-scaphoid cases without the v0.2 chronic/nonunion terms in diagnosis/complaint/examination text.'])
 
-    years = []
-    for disease, recs in records.items():
-        counts = Counter(recs[pid]["admit"].year for pid in strict[disease] if recs[pid]["admit"])
-        years.extend({"disease": disease, "year": year, "strict_admissions": suppress(counts.get(year, 0))} for year in range(2015, 2026))
-    write_csv(out_dir / "data/aggregate/year_distribution.csv", years, ["disease", "year", "strict_admissions"])
-
-    procedures = []
-    for disease, patterns in PROCEDURES.items():
-        denominator = sum(records[disease][pid]["detail"] for pid in strict[disease])
-        for label, pattern in patterns.items():
-            regex = re.compile(pattern, re.I)
-            n = sum(records[disease][pid]["detail"] and regex.search(" ".join(records[disease][pid]["surgery_text"])) is not None for pid in strict[disease])
-            procedures.append({"disease": disease, "procedure_phenotype": label, "n": suppress(n), "denominator_detailed_notes": denominator, "percent": "<5" if 0 < n < 5 else (f"{100*n/denominator:.1f}" if denominator else "")})
-    write_csv(out_dir / "data/aggregate/procedure_phenotype_counts.csv", procedures, ["disease", "procedure_phenotype", "n", "denominator_detailed_notes", "percent"])
-
-    scaphoid = strict["scaphoid_fracture"]
-    chronic_n = sum(CHRONIC.search(" ".join(records["scaphoid_fracture"][pid]["text"])) is not None for pid in scaphoid)
-    groups = [
-        {"phenotype_group": "established_chronic_or_nonunion", "n": chronic_n, "interpretation": "Text-supported established chronic/nonunion phenotype; not necessarily incident nonunion observed longitudinally."},
-        {"phenotype_group": "other_wrist_scaphoid", "n": len(scaphoid) - chronic_n, "interpretation": "Wrist-scaphoid cases without the preregistered chronic/nonunion terms in currently available text."},
-    ]
-    write_csv(out_dir / "data/aggregate/scaphoid_phenotype_groups.csv", groups, ["phenotype_group", "n", "interpretation"])
-
-
-if __name__ == "__main__":
+if __name__=='__main__':
     import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--raw-dir", required=True)
-    parser.add_argument("--out-dir", required=True)
-    args = parser.parse_args()
-    build(args.raw_dir, args.out_dir)
+    ap=argparse.ArgumentParser(); ap.add_argument('--raw-dir',required=True); ap.add_argument('--out-dir',required=True); args=ap.parse_args(); build(args.raw_dir,args.out_dir)
