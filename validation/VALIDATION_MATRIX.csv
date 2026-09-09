@@ -1,0 +1,17 @@
+id,validation,status,applies_to,primary_output,pass_rule
+V1,Cohort-definition robustness,NOT_STARTED,all,primary effect/performance across cohort variants,headline interpretation retained
+V2,Phenotype-definition robustness,NOT_STARTED,all,prevalence and primary result across phenotype variants,no single arbitrary definition drives conclusion
+V3,Patient-level separation and leakage audit,NOT_STARTED,all,split audit and leakage report,zero post-index leakage and zero patient crossover
+V4,Internal resampling stability,NOT_STARTED,all,bootstrap/repeated-CV distribution,uncertainty and failure frequency reported
+V5,Temporal validation,NOT_STARTED,all,later-period held-out result,primary conclusion retained with quantified degradation
+V6,Site/service-line validation,NOT_STARTED,when_available,stratified/external-site result,not isolated to one site/provider stratum
+V7,Missingness/documentation sensitivity,NOT_STARTED,all,missingness maps and alternative-treatment results,primary result not created by one missingness strategy
+V8,Subgroup stability,NOT_STARTED,all,subgroup estimates with CI,heterogeneity quantified
+V9,Calibration and decision utility,NOT_STARTED,prediction,calibration and decision metrics,utility claim supported beyond discrimination
+V10,Baseline comparison,NOT_STARTED,all,baseline vs proposed method with CI,claimed gain robust across relevant metrics
+V11,Ablation,NOT_STARTED,complex_workflows,component removal study,source of gain identified
+V12,Negative controls,NOT_STARTED,all,negative-control effect/performance,no comparable spurious signal
+V13,Label/annotation validation,NOT_STARTED,manual_or_constructed_labels,agreement/confusion audit,label quality quantified independently
+V14,Analytic-choice sensitivity,NOT_STARTED,all,multiverse/sensitivity table,headline conclusion not dependent on one narrow choice
+V15,Outlier/influence analysis,NOT_STARTED,when_applicable,influence diagnostics,result not qualitatively reversed by prespecified extremes
+V16,Reproducibility,NOT_STARTED,all,rebuild log and environment manifest,manuscript outputs reproducible from frozen inputs
